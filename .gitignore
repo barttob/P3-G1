@@ -1,0 +1,5 @@
+# Ignorowanie folderu data
+data/
+
+# Ignorowanie pliku test.py
+test.py

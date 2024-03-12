@@ -17,6 +17,7 @@ class LeftPart(QWidget):
 
         # Inicjalizacja interfejsu użytkownika
         self.initUI()
+        self.file_path = ""
 
     def initUI(self):
         # Ustawienie layoutu pionowego
@@ -47,9 +48,12 @@ class LeftPart(QWidget):
         self.deselect_all_button.clicked.connect(self.deselect_all_rows)
         self.clear_table_button = QPushButton('Wyczyść tabelę')  # Nowy przycisk
         self.clear_table_button.clicked.connect(self.clear_table)  # Nowa metoda
+        self.display_file_button = QPushButton('Nesting')  # New button
+        self.display_file_button.clicked.connect(self.display_selected_file)  # Connect button to method
         btn_layout.addWidget(self.select_all_button)
         btn_layout.addWidget(self.deselect_all_button)
         btn_layout.addWidget(self.clear_table_button)  # Dodanie przycisku do układu
+        btn_layout.addWidget(self.display_file_button)
         layout.addLayout(btn_layout)
 
         self.setLayout(layout)
@@ -61,10 +65,12 @@ class LeftPart(QWidget):
     def import_files(self):
         file_paths, _ = QFileDialog.getOpenFileNames(self, 'Wybierz pliki', '.', 'DXF Files (*.dxf);;SVG Files (*.svg)')
         for file_path in file_paths:
+            self.file_path = file_path
             if file_path.lower().endswith('.dxf'):
                 self.read_and_display_dxf(file_path)
             elif file_path.lower().endswith('.svg'):
                 self.read_and_display_svg(file_path)
+            # self.right_part.display_file(file_path)
 
     def read_and_display_dxf(self, file_path):
         try:
@@ -234,4 +240,6 @@ class LeftPart(QWidget):
             checkbox_item = self.table.cellWidget(row, 3)
             checkbox_item.setChecked(False)
 
+    def display_selected_file(self):
+        self.right_part.display_file(self.file_path)
 

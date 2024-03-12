@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from TAB.main_tab.left_part import LeftPart
 from TAB.main_tab.right_part import RightPart
 
@@ -7,15 +7,24 @@ class MainTab(QWidget):
     def __init__(self):
         super().__init__()
 
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
 
-        # Pierwsza część (lewa)
+        # First row layout
+        first_row_layout = QHBoxLayout()
+        main_layout.addLayout(first_row_layout)
+
+        # First part (left)
         left_part = LeftPart()
-        layout.addWidget(left_part)
-        # Ustawienie stałej szerokości dla lewej części
+        first_row_layout.addWidget(left_part)
         left_part.setFixedWidth(650)
 
-        # Druga część (prawa)
+        # Second part (right)
         right_part = RightPart()
-        layout.addWidget(right_part)
+        first_row_layout.addWidget(right_part)
+
+        # Second row layout
+        second_row_layout = QHBoxLayout()
+        main_layout.addLayout(second_row_layout)
+
+        left_part.right_part = right_part

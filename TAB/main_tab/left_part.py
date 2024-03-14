@@ -33,7 +33,7 @@ class LeftPart(QWidget):
         layout.addWidget(self.table)
 
         # Ustawienie nagłówków tabeli
-        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz']
+        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Opcje']
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
 

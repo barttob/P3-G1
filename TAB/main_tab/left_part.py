@@ -17,7 +17,7 @@ class LeftPart(QWidget):
 
         # Inicjalizacja interfejsu użytkownika
         self.initUI()
-        self.file_path = ""
+        self.file_path_send = []
 
     def initUI(self):
         # Ustawienie layoutu pionowego
@@ -60,12 +60,13 @@ class LeftPart(QWidget):
 
     def clear_table(self):
         self.table.clearContents()  
-        self.table.setRowCount(0)   
+        self.table.setRowCount(0)
+        self.file_path_send = []  
 
     def import_files(self):
         file_paths, _ = QFileDialog.getOpenFileNames(self, 'Wybierz pliki', '.', 'DXF Files (*.dxf);;SVG Files (*.svg)')
         for file_path in file_paths:
-            self.file_path = file_path
+            self.file_path_send += file_paths
             if file_path.lower().endswith('.dxf'):
                 self.read_and_display_dxf(file_path)
             elif file_path.lower().endswith('.svg'):
@@ -240,5 +241,5 @@ class LeftPart(QWidget):
             checkbox_item.setChecked(False)
 
     def display_selected_file(self):
-        self.right_part.display_file(self.file_path)
+        self.right_part.display_file(self.file_path_send)
 

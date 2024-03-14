@@ -25,37 +25,34 @@ class RightPart(QWidget):
 
         self.setLayout(layout)
         self.inputPoints = []
-        self.volume = Box(150000, 150000)
+        self.volume = Box(50000, 50000)
         self.initUI()
         
     def initUI(self):
         pass
 
-    def display_file(self, file_path):
-        file_to_parse = Parser(file_path)
-        if file_path.lower().endswith('.dxf'):
-            self.inputPoints = file_to_parse.parse_dxf()
-        elif file_path.lower().endswith('.svg'):
-            self.inputPoints = file_to_parse.parse_svg()
-
+    def display_file(self, file_paths):
+        self.inputPoints = []
+        for file_path in file_paths:
+            file_to_parse = Parser(file_path)
+            if file_path.lower().endswith('.dxf'):
+                self.inputPoints += file_to_parse.parse_dxf()
+            elif file_path.lower().endswith('.svg'):
+                self.inputPoints += file_to_parse.parse_svg()
         config = NfpConfig()
         config.alignment = NfpConfig.Alignment.BOTTOM_LEFT
         config.starting_point = NfpConfig.Alignment.CENTER
 
         num_bins = nest(self.inputPoints, self.volume, 1, config)
-        # Clear the scene before adding new items
+
         fig = Figure()
         ax = fig.add_subplot(111)
-
-
-        # fig, ax = plt.subplots(figsize=(8, 6), dpi=150)  # Create a new figure for each item
 
         for item in self.inputPoints:
             # figure.sca(ax)
             x_values = []
             y_values = []
             transItem = item.transformedShape()
-            print(transItem)
             rows = len(transItem.toString().strip().split('\n')) - 1
             for i in range(rows - 1):
                 x_value = transItem.vertex(i).x()

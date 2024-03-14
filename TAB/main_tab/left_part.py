@@ -70,7 +70,6 @@ class LeftPart(QWidget):
                 self.read_and_display_dxf(file_path)
             elif file_path.lower().endswith('.svg'):
                 self.read_and_display_svg(file_path)
-            # self.right_part.display_file(file_path)
 
     def read_and_display_dxf(self, file_path):
         try:

@@ -1,11 +1,14 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap, QPainter
 from PyQt5.QtCore import Qt
 import xml.etree.ElementTree as ET
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from xml.dom import minidom
 import svg.path
 import matplotlib.pyplot as plt
 from pynest2d import *
+from utils.parser import Parser
 
 class RightPart(QWidget):
     def __init__(self):
@@ -29,33 +32,30 @@ class RightPart(QWidget):
         pass
 
     def display_file(self, file_path):
-        self.file_label.setText(f"Selected file: {file_path}")
-        doc = minidom.parse(file_path)
-        path_strings = [path.getAttribute('d') for path in doc.getElementsByTagName('path')]
+        file_to_parse = Parser(file_path)
+        if file_path.lower().endswith('.dxf'):
+            self.inputPoints = file_to_parse.parse_dxf()
+        elif file_path.lower().endswith('.svg'):
+            self.inputPoints = file_to_parse.parse_svg()
 
-        for path_str in path_strings:
-            path = svg.path.parse_path(path_str)
-            points = []
-            for segment in path:
-                if segment.start is not None:
-                    points.append(Point(int(segment.start.real * 100), int(segment.start.imag  * 100)))
-                if segment.end is not None:
-                    points.append(Point(int(segment.end.real  * 100), int(segment.end.imag  * 100)))
-            item = Item(points)
-            self.inputPoints.append(item)
+        config = NfpConfig()
+        config.alignment = NfpConfig.Alignment.BOTTOM_LEFT
+        config.starting_point = NfpConfig.Alignment.CENTER
 
-        num_bins = nest(self.inputPoints, self.volume)
-        
+        num_bins = nest(self.inputPoints, self.volume, 1, config)
         # Clear the scene before adding new items
-        self.scene.clear()
+        fig = Figure()
+        ax = fig.add_subplot(111)
 
-        # Create a figure and axes for matplotlib plot
-        fig, ax = plt.subplots(figsize=(8, 6), dpi=150)  # Increase figure size and DPI
+
+        # fig, ax = plt.subplots(figsize=(8, 6), dpi=150)  # Create a new figure for each item
 
         for item in self.inputPoints:
+            # figure.sca(ax)
             x_values = []
             y_values = []
             transItem = item.transformedShape()
+            print(transItem)
             rows = len(transItem.toString().strip().split('\n')) - 1
             for i in range(rows - 1):
                 x_value = transItem.vertex(i).x()
@@ -64,27 +64,15 @@ class RightPart(QWidget):
                 y_values.append(y_value)
             ax.plot(x_values, y_values, color='black', linewidth=1)  # Adjust linewidth
 
-        # Set plot limits
-        ax.set_xlim((-self.volume.width())/2, self.volume.width()/2)
-        ax.set_ylim((-self.volume.height())/2, self.volume.height()/2)
-        
+        canvas = FigureCanvas(fig)
+        self.scene.addWidget(canvas)
+        ax.set_aspect('equal')
+        ax.set_xlim([-self.volume.width()/2, self.volume.width()/2])
+        ax.set_ylim([-self.volume.height()/2, self.volume.height()/2])
+
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_aspect('equal')  # Set equal aspect ratio
 
-        # Save the figure to a temporary file
-        tmp_file = "/tmp/plot.png"
-        fig.savefig(tmp_file, format="png", transparent=True, bbox_inches="tight", pad_inches=0)
+        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        canvas.updateGeometry()
 
-        # Load the saved image to QPixmap
-        pixmap = QPixmap(tmp_file)
-
-        # Add the QPixmap to QGraphicsScene
-        self.scene.addPixmap(pixmap)
-
-        # Set plot aspect ratio
-        self.graphics_view.setSceneRect(0, 0, pixmap.width(), pixmap.height())
-        self.graphics_view.fitInView(0, 0, pixmap.width(), pixmap.height(), Qt.KeepAspectRatio)
-
-        # Delete the matplotlib figure to release resources
-        plt.close(fig)

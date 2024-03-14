@@ -9,7 +9,7 @@
 
 Build image
 
-    docker build -t optinest
+    docker build -t optinest .
 
 To run image you have to run **vcxsrv.exe** and then run docker image
 

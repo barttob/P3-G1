@@ -3,6 +3,11 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget
 from TAB.main_tab.main_tab import MainTab
 from TAB.config_tab import ConfigTab
 from TAB.info_tab import InfoTab
+from db.database import create_table, insert_sample_data
+
+# Inicjalizacja bazy danych
+create_table()
+# insert_sample_data()
 
 class MainWindow(QMainWindow):
     def __init__(self):

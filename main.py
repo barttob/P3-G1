@@ -9,7 +9,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("OptiNest v1.0")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1920, 1080)
         self.showMaximized()
 
         tab_widget = QTabWidget()

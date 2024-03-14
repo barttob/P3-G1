@@ -6,7 +6,6 @@ from xml.dom import minidom
 import svg.path
 import matplotlib.pyplot as plt
 from pynest2d import *
-import time
 
 class RightPart(QWidget):
     def __init__(self):

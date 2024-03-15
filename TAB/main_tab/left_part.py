@@ -179,6 +179,8 @@ class LeftPart(QWidget):
                 y_points.append(point.imag)
 
         ax.plot(x_points, y_points, color='black')
+        ax.set_xticks([])
+        ax.set_yticks([])
 
     def create_figure(self, entity):
         # Tworzenie nowej figury Matplotlib

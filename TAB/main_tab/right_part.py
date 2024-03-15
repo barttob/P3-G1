@@ -9,13 +9,13 @@ import svg.path
 import matplotlib.pyplot as plt
 from pynest2d import *
 from utils.parser import Parser
+import numpy as np
+import random
 
 class RightPart(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
-        self.file_label = QLabel("No file selected")
-        layout.addWidget(self.file_label)
         
         # Create QGraphicsView and QGraphicsScene for embedding matplotlib plot
         self.graphics_view = QGraphicsView()
@@ -42,14 +42,17 @@ class RightPart(QWidget):
         config = NfpConfig()
         config.alignment = NfpConfig.Alignment.BOTTOM_LEFT
         config.starting_point = NfpConfig.Alignment.CENTER
+        config.rotations = [i * (2 * 3.14159) / 12 for i in range(12)]
+        config.accuracy = 0.65
+        config.explore_holes = False
+        config.parallel = True
 
         num_bins = nest(self.inputPoints, self.volume, 1, config)
 
-        fig = Figure()
+        fig = Figure(figsize=(8, 8))  # Set figure size to be 2 times bigger
         ax = fig.add_subplot(111)
 
         for item in self.inputPoints:
-            # figure.sca(ax)
             x_values = []
             y_values = []
             transItem = item.transformedShape()
@@ -59,7 +62,8 @@ class RightPart(QWidget):
                 y_value = transItem.vertex(i).y()
                 x_values.append(x_value)
                 y_values.append(y_value)
-            ax.plot(x_values, y_values, color='black', linewidth=1)  # Adjust linewidth
+            random_color = (random.random(), random.random(), random.random())
+            ax.plot(x_values, y_values, color=random_color, linewidth=1)
 
         canvas = FigureCanvas(fig)
         self.scene.addWidget(canvas)
@@ -72,4 +76,5 @@ class RightPart(QWidget):
 
         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         canvas.updateGeometry()
+
 

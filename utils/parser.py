@@ -13,18 +13,37 @@ class Parser():
     def parse_svg(self):
         doc = minidom.parse(self.file_label)
         path_strings = [path.getAttribute('d') for path in doc.getElementsByTagName('path')]
+        rect_strings = [rect for rect in doc.getElementsByTagName('rect')]
+        polygon_strings = [polygon.getAttribute('points') for polygon in doc.getElementsByTagName('polygon')]
+
 
         for path_str in path_strings:
-            print(path_str)
             path = parse_path(path_str)
-            print(path)
             self.svg_parse_points = []
             self.extract_points_from_path(path)
             item = Item(self.svg_parse_points)
             self.inputPoints.append(item)
-        print(self.inputPoints[0])
-        print(self.inputPoints[1])
+
+        for rect in rect_strings:
+            x = float(rect.getAttribute('x'))
+            y = float(rect.getAttribute('y'))
+            width = float(rect.getAttribute('width'))
+            height = float(rect.getAttribute('height'))
+            points = [Point(int(x * 100), int(y * 100)),
+                    Point(int((x + width) * 100), int(y * 100)),
+                    Point(int((x + width) * 100), int((y + height) * 100)),
+                    Point(int(x * 100), int((y + height) * 100))]
+            self.inputPoints.append(Item(points))
+
+        for polygon_str in polygon_strings:
+            poly_str = polygon_str.split()
+            points = []
+            for i in range(0, len(poly_str) - 2, 2):
+                points.append(Point(int(float(poly_str[i]) * 100), int(float(poly_str[i + 1]) * 100)))
+            self.inputPoints.append(Item(points))
+
         return self.inputPoints
+
     
     def extract_points_from_path(self, path):
         for segment in path:
@@ -64,6 +83,7 @@ class Parser():
         msp = doc.modelspace()
         
         for entity in msp:
+            points = []
             if entity.dxftype() == 'LINE':
                 start_point = entity.dxf.start
                 end_point = entity.dxf.end
@@ -76,11 +96,26 @@ class Parser():
                 for i in range(len(control_points) - 1):
                     start_point = control_points[i][:2]  # x, y coordinates of control points
                     end_point = control_points[i + 1][:2]
-                    points = [Point(int(start_point[0] * 100), int(start_point[1] * 100)), 
-                            Point(int(end_point[0] * 100), int(end_point[1] * 100))]
-                    item = Item(points)
-                    self.inputPoints.append(item)
-                    
+                    points.append(Point(int(start_point[0] * 100), int(start_point[1] * 100)))
+                item = Item(points)
+                self.inputPoints.append(item)
+            elif entity.dxftype() == 'LWPOLYLINE':
+                for vertex in entity.vertices:
+                    points.append(Point(int(vertex.dxf.location[0] * 100), int(vertex.dxf.location[1] * 100)))
+                item = Item(points)
+                self.inputPoints.append(item)
+            elif entity.dxftype() == 'CIRCLE':
+                center = entity.dxf.center
+                radius = entity.dxf.radius
+                num_segments = 36
+                for i in range(num_segments):
+                    angle = i * (2 * math.pi / num_segments)
+                    x = center[0] + radius * math.cos(angle)
+                    y = center[1] + radius * math.sin(angle)
+                    points.append(Point(int(x * 100), int(y * 100)))
+                item = Item(points)
+                self.inputPoints.append(item)
+                        
         return self.inputPoints
 
     

@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit
 from PyQt5.QtCore import Qt
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -27,6 +27,18 @@ class LeftPart(QWidget):
         self.import_button = QPushButton('Importuj pliki')
         self.import_button.clicked.connect(self.import_files)
         layout.addWidget(self.import_button)
+
+        # Pole tekstowe dla szerokości
+        self.width_label = QLabel('Szerokość:')
+        self.width_input = QLineEdit()
+        layout.addWidget(self.width_label)
+        layout.addWidget(self.width_input)
+
+        # Pole tekstowe dla wysokości
+        self.height_label = QLabel('Wysokość:')
+        self.height_input = QLineEdit()
+        layout.addWidget(self.height_label)
+        layout.addWidget(self.height_input)
 
         # Utworzenie tabeli do wyświetlania danych
         self.table = QTableWidget()
@@ -243,5 +255,14 @@ class LeftPart(QWidget):
             checkbox_item.setChecked(False)
 
     def display_selected_file(self):
-        self.right_part.display_file(self.file_path_send)
+        width_text = self.width_input.text()
+        height_text = self.height_input.text()
 
+        if width_text and height_text:
+            width = int(width_text)
+            height = int(height_text)
+        else:
+            width = 50000
+            height = 50000
+
+        self.right_part.display_file(self.file_path_send, width, height)

@@ -25,13 +25,12 @@ class RightPart(QWidget):
 
         self.setLayout(layout)
         self.inputPoints = []
-        self.volume = Box(50000, 50000)
-        self.initUI()
+        self.volume = None  # Move initialization to display_file method
         
     def initUI(self):
         pass
 
-    def display_file(self, file_paths):
+    def display_file(self, file_paths, width, height):  # Dodaj parametry szerokości i wysokości
         self.inputPoints = []
         for file_path in file_paths:
             file_to_parse = Parser(file_path)
@@ -47,9 +46,11 @@ class RightPart(QWidget):
         config.explore_holes = False
         config.parallel = True
 
+        self.volume = Box(width, height)
+
         num_bins = nest(self.inputPoints, self.volume, 1, config)
 
-        fig = Figure(figsize=(8, 8))  # Set figure size to be 2 times bigger
+        fig = Figure(figsize=(8, 8))
         ax = fig.add_subplot(111)
 
         for item in self.inputPoints:

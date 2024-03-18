@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox
 from PyQt5.QtCore import Qt
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -28,21 +28,36 @@ class LeftPart(QWidget):
         self.import_button.clicked.connect(self.import_files)
         layout.addWidget(self.import_button)
 
+        # Utworzenie ramki dla wymiarów płaszczyzny roboczej
+        dimension_frame = QGroupBox()
+        dimension_layout = QVBoxLayout()
+
+        # Ustawienie tytułu ramki z pogrubieniem za pomocą HTML
+        dimension_frame.setTitle('Wymiary płaszczyzny roboczej')
+
         # Pole tekstowe dla szerokości
         self.width_label = QLabel('Szerokość:')
         self.width_input = QLineEdit()
-        layout.addWidget(self.width_label)
-        layout.addWidget(self.width_input)
+        dimension_layout.addWidget(self.width_label)
+        dimension_layout.addWidget(self.width_input)
 
         # Pole tekstowe dla wysokości
         self.height_label = QLabel('Wysokość:')
         self.height_input = QLineEdit()
-        layout.addWidget(self.height_label)
-        layout.addWidget(self.height_input)
+        dimension_layout.addWidget(self.height_label)
+        dimension_layout.addWidget(self.height_input)
+
+        # Ustawienie układu dla ramki
+        dimension_frame.setLayout(dimension_layout)
+
+        # Dodanie ramki do głównego układu
+        layout.addWidget(dimension_frame)
 
         # Utworzenie tabeli do wyświetlania danych
         self.table = QTableWidget()
         layout.addWidget(self.table)
+
+
 
         # Ustawienie nagłówków tabeli
         headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Opcje']
@@ -258,11 +273,22 @@ class LeftPart(QWidget):
         width_text = self.width_input.text()
         height_text = self.height_input.text()
 
-        if width_text and height_text:
-            width = int(width_text)
-            height = int(height_text)
+        # Sprawdzenie, czy pola szerokości i wysokości są puste
+        if not width_text.strip() and not height_text.strip():
+            # Jeśli pola są puste, wyświetlamy okno dialogowe z komunikatem
+            QMessageBox.warning(self, "Błąd", "Pola szerokości i wysokości nie mogą być puste.")
         else:
-            width = 50000
-            height = 50000
+            # Jeśli pola nie są puste, sprawdzamy, czy zawierają jedynie cyfry lub wartości ujemne
+            if width_text.replace('-', '').isnumeric() and height_text.replace('-', '').isnumeric():
+                width = int(width_text)
+                height = int(height_text)
+                # Dodatkowa walidacja: Sprawdzamy, czy szerokość i wysokość są większe niż zero
+                if width > 0 and height > 0:
+                    # Wywołanie metody wyświetlającej pliki, ponieważ pola są poprawnie uzupełnione
+                    self.right_part.display_file(self.file_path_send, width, height)
+                else:
+                    QMessageBox.warning(self, "Błąd", "Szerokość i wysokość muszą być większe od zera.")
+            else:
+                # Jeśli pola zawierają niedozwolone znaki, wyświetlamy okno dialogowe z odpowiednim komunikatem
+                QMessageBox.warning(self, "Błąd", "Podane wartości szerokości i wysokości muszą być liczbami.")
 
-        self.right_part.display_file(self.file_path_send, width, height)

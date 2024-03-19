@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from TAB.main_tab.left_part import LeftPart
 from TAB.main_tab.right_part import RightPart
+from TAB.config_tab import ConfigTab
 
 class MainTab(QWidget):
     def __init__(self):

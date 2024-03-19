@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget
 from TAB.main_tab.main_tab import MainTab
 from TAB.config_tab import ConfigTab
 from TAB.info_tab import InfoTab
+from TAB.main_tab.right_part import RightPart
 from db.database import create_table, insert_sample_data
 
 # Inicjalizacja bazy danych
@@ -17,9 +18,12 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 1360, 720)
         self.showMaximized()
 
+        # Tworzenie instancji RightPart
+        right_part = RightPart()
+
         tab_widget = QTabWidget()
         main_tab = MainTab()
-        config_tab = ConfigTab()
+        config_tab = ConfigTab(right_part)  # Komunikacja miedzy klasami
         info_tab = InfoTab()
 
         tab_widget.addTab(main_tab, "Main")

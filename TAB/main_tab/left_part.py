@@ -9,6 +9,8 @@ import xml.etree.ElementTree as ET
 import svg.path
 import numpy as np
 from svg.path import parse_path
+from TAB.config_tab import ConfigTab
+from TAB.main_tab.right_part import RightPart
 
 
 class LeftPart(QWidget):
@@ -18,6 +20,7 @@ class LeftPart(QWidget):
         # Inicjalizacja interfejsu użytkownika
         self.initUI()
         self.file_path_send = []
+        self.right_part = RightPart()
 
     def initUI(self):
         # Ustawienie layoutu pionowego

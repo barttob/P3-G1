@@ -20,6 +20,8 @@ optimization = None
 accuracy = None
 rotations = None
 starting_point = None
+import numpy as np
+import random
 
 class RightPart(QWidget):
 
@@ -38,6 +40,7 @@ class RightPart(QWidget):
         self.file_label = QLabel("No file selected")
         layout.addWidget(self.file_label)
 
+        
         # Create QGraphicsView and QGraphicsScene for embedding matplotlib plot
         self.graphics_view = QGraphicsView()
         layout.addWidget(self.graphics_view)
@@ -76,15 +79,6 @@ class RightPart(QWidget):
     def display_file(self, file_paths):
         # Access global variables
         global global_space_between_objects, global_explore_holes, global_parallel, global_optimization, global_accuracy, global_rotations, global_starting_point
-        # Print updated configuration
-        print("Updated configuration 2:")
-        print("Space between objects:", global_space_between_objects)
-        print("Explore holes:", global_explore_holes)
-        print("Parallel:", global_parallel)
-        print("Optimization:", global_optimization)
-        print("Accuracy:", global_accuracy)
-        print("Rotations:", global_rotations)
-        print("Starting point:", global_starting_point)
 
         self.inputPoints = []
         for file_path in file_paths:
@@ -137,7 +131,7 @@ class RightPart(QWidget):
 
         num_bins = nest(self.inputPoints, self.volume, 1, config)
 
-        fig = Figure()
+        fig = Figure(figsize=(8, 8))  # Set figure size to be 2 times bigger
         ax = fig.add_subplot(111)
 
         for item in self.inputPoints:
@@ -150,7 +144,8 @@ class RightPart(QWidget):
                 y_value = transItem.vertex(i).y()
                 x_values.append(x_value)
                 y_values.append(y_value)
-            ax.plot(x_values, y_values, color='black', linewidth=1)  # Adjust linewidth
+            random_color = (random.random(), random.random(), random.random())
+            ax.plot(x_values, y_values, color=random_color, linewidth=1)
 
         canvas = FigureCanvas(fig)
         self.scene.addWidget(canvas)

@@ -15,8 +15,10 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("OptiNest v1.0")
-        self.setGeometry(100, 100, 1360, 720)
-        self.showMaximized()
+        # self.setGeometry(100, 100, 1360, 720)
+        screen_geometry = QApplication.desktop().screenGeometry()
+        self.setGeometry(screen_geometry)
+        self.showFullScreen()
 
         # Tworzenie instancji RightPart
         right_part = RightPart()

@@ -1,3 +1,4 @@
+import os
 import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox
 from PyQt5.QtCore import Qt
@@ -11,6 +12,10 @@ import numpy as np
 from svg.path import parse_path
 from TAB.config_tab import ConfigTab
 from TAB.main_tab.right_part import RightPart
+from ezdxf.addons import odafc
+import shutil
+import random
+import string
 
 
 class LeftPart(QWidget):
@@ -67,13 +72,15 @@ class LeftPart(QWidget):
         self.file_path_send = []  
 
     def import_files(self):
-        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Wybierz pliki', '.', 'DXF Files (*.dxf);;SVG Files (*.svg)')
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Wybierz pliki', '.', 'DXF Files (*.dxf);;DWG Files (*.dwg);;SVG Files (*.svg)')
         for file_path in file_paths:
             self.file_path_send += file_paths
             if file_path.lower().endswith('.dxf'):
                 self.read_and_display_dxf(file_path)
             elif file_path.lower().endswith('.svg'):
                 self.read_and_display_svg(file_path)
+            elif file_path.lower().endswith('.dwg'):
+                self.convert_and_display_dwg(file_path)
 
     def read_and_display_dxf(self, file_path):
         try:
@@ -182,6 +189,8 @@ class LeftPart(QWidget):
                 y_points.append(point.imag)
 
         ax.plot(x_points, y_points, color='black')
+        ax.set_xticks([])
+        ax.set_yticks([])
 
     def create_figure(self, entity):
         # Tworzenie nowej figury Matplotlib
@@ -246,3 +255,43 @@ class LeftPart(QWidget):
     def display_selected_file(self):
         self.right_part.display_file(self.file_path_send)
 
+    def convert_and_display_dwg(self, file_path):
+        try:
+            # Pobierz ścieżkę do katalogu projektu
+            project_dir = os.getcwd()
+            print(project_dir)
+
+            # Utwórz ścieżkę do folderu tymczasowego
+            temp_folder = os.path.join(project_dir, 'temp')
+
+            # Sprawdź czy folder już istnieje, jeśli nie - utwórz go
+            if not os.path.exists(temp_folder):
+                os.makedirs(temp_folder)
+                print(f"Utworzono folder tymczasowy: {temp_folder}")
+            else:
+                print(f"Folder tymczasowy już istnieje: {temp_folder}")     
+
+            os.environ['XDG_RUNTIME_DIR'] = '/tmp/runtime-root'
+
+            file_name = os.path.basename(file_path)
+
+            # Utwórz losową nazwę dla pliku tymczasowego
+            random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+            temp_file_name, temp_file_ext = os.path.splitext(file_name)
+            temp_file_path = os.path.join(temp_folder, f"{temp_file_name}_{random_suffix}{temp_file_ext}")
+
+            shutil.copy2(file_path, temp_file_path)
+
+            # Konwersja pliku DWG do DXF przy użyciu ODA File Converter
+            odafc.convert(temp_file_path, version='ACAD2018', audit=True)
+
+            # Odnajdywanie skonwertowanego pliku DXF
+            dxf_files = [f for f in os.listdir(temp_folder) if f.endswith('.dxf')]
+            if len(dxf_files) > 0:
+                dxf_file_path = os.path.join(temp_folder, dxf_files[0])
+                self.read_and_display_dxf(dxf_file_path)
+            else:
+                print("Brak pliku DXF po konwersji.")
+
+        except Exception as e:
+            print("Błąd konwersji pliku DWG:", e)

@@ -2,9 +2,11 @@ import os
 import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QDoubleValidator
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle, Polygon
 from ezdxf import readfile
 import xml.etree.ElementTree as ET
 import svg.path
@@ -41,14 +43,20 @@ class LeftPart(QWidget):
         dimension_frame.setTitle('Wymiary płaszczyzny roboczej')
 
         # Pole tekstowe dla szerokości
-        self.width_label = QLabel('Szerokość:')
+        self.width_label = QLabel('Szerokość (mm):')
         self.width_input = QLineEdit()
+        self.width_input.setText("100")
+        width_validator = QDoubleValidator()
+        self.width_input.setValidator(width_validator)
         dimension_layout.addWidget(self.width_label)
         dimension_layout.addWidget(self.width_input)
 
         # Pole tekstowe dla wysokości
-        self.height_label = QLabel('Wysokość:')
+        self.height_label = QLabel('Wysokość (mm):')
         self.height_input = QLineEdit()
+        self.height_input.setText("100")
+        height_validator = QDoubleValidator()
+        self.height_input.setValidator(height_validator)
         dimension_layout.addWidget(self.height_label)
         dimension_layout.addWidget(self.height_input)
 
@@ -145,41 +153,52 @@ class LeftPart(QWidget):
 
     def read_and_display_svg(self, file_path):
         try:
-            # Otwarcie pliku SVG
+            # Open the SVG file
             tree = ET.parse(file_path)
             root = tree.getroot()
 
-            
-
-            # Iteracja przez elementy w pliku SVG
+            # Iterate through elements in the SVG file
             for element in root.iter():
-                # Sprawdzenie czy element jest rysunkiem (path)
-                if element.tag.endswith('path'):
-                    # Tworzenie miniatury figury
+                # Check if the element is a path, rectangle, or polygon
+                if element.tag.endswith('path') or element.tag.endswith('rect') or element.tag.endswith('polygon'):
+                    # Create a thumbnail of the figure
                     figure_canvas = self.create_svg_figure(element)
 
-                    # Dodanie wiersza do tabeli
+                    # Add a row to the table
                     row_position = self.table.rowCount()
                     self.table.insertRow(row_position)
 
-                    # Wstawienie miniatury figury do pierwszej kolumny
+                    # Insert the thumbnail into the first column
                     self.table.setCellWidget(row_position, 0, figure_canvas)
 
-                    # Wstawienie typu elementu do drugiej kolumny
-                    self.table.setItem(row_position, 1, QTableWidgetItem('SVG Path'))
+                    # Insert the type of element into the second column
+                    if element.tag.endswith('path'):
+                        element_type = 'SVG Path'
+                    elif element.tag.endswith('rect'):
+                        element_type = 'SVG Rectangle'
+                    elif element.tag.endswith('polygon'):
+                        element_type = 'SVG Polygon'
+                    self.table.setItem(row_position, 1, QTableWidgetItem(element_type))
 
-                    # Wstawienie danych (ścieżki) do trzeciej kolumny
-                    self.table.setItem(row_position, 2, QTableWidgetItem(element.attrib['d']))
+                    # Insert data (path, rectangle properties, or polygon points) into the third column
+                    if element.tag.endswith('path'):
+                        self.table.setItem(row_position, 2, QTableWidgetItem(element.attrib['d']))
+                    elif element.tag.endswith('rect'):
+                        rect_data = f"x: {element.attrib['x']}, y: {element.attrib['y']}, width: {element.attrib['width']}, height: {element.attrib['height']}"
+                        self.table.setItem(row_position, 2, QTableWidgetItem(rect_data))
+                    elif element.tag.endswith('polygon'):
+                        self.table.setItem(row_position, 2, QTableWidgetItem(element.attrib['points']))
 
-                    # Dodanie checkboxa do zaznaczania wiersza
+                    # Add a checkbox to select the row
                     checkbox_item = QCheckBox()
                     self.table.setCellWidget(row_position, 3, checkbox_item)
 
-                    # Ustawienie stałego rozmiaru dla komórki z miniaturą
+                    # Set a fixed size for the thumbnail cell
                     self.table.verticalHeader().setDefaultSectionSize(100)
 
         except Exception as e:
-            print("Błąd odczytu pliku SVG:", e)
+            print("Error reading SVG file:", e)
+
 
     def create_svg_figure(self, element):
         # Tworzenie nowej figury Matplotlib
@@ -196,23 +215,37 @@ class LeftPart(QWidget):
         return canvas
     
     def draw_svg_element(self, ax, element):
-        # Pobranie danych o ścieżce z elementu SVG i narysowanie jej na wykresie
-        path_data = element.attrib['d']
-        path = parse_path(path_data)
+        if element.tag.endswith('path'):
+            # Drawing paths
+            path_data = element.attrib['d']
+            path = parse_path(path_data)
 
-        # Inicjalizacja list do przechowywania punktów ścieżki
-        x_points = []
-        y_points = []
+            # Initialize lists to store path points
+            x_points = []
+            y_points = []
 
-        for segment in path:
-            # Iteracja przez segmenty ścieżki
-            for t in np.linspace(0, 1, num=100):
-                # Pobranie współrzędnych punktu na ścieżce dla danego parametru t
-                point = segment.point(t)
-                x_points.append(point.real)
-                y_points.append(point.imag)
+            for segment in path:
+                for t in np.linspace(0, 1, num=100):
+                    point = segment.point(t)
+                    x_points.append(point.real)
+                    y_points.append(point.imag)
 
-        ax.plot(x_points, y_points, color='black')
+            ax.plot(x_points, y_points, color='black')
+        elif element.tag.endswith('rect'):
+            # Drawing rectangles
+            x = float(element.attrib['x'])
+            y = float(element.attrib['y'])
+            width = float(element.attrib['width'])
+            height = float(element.attrib['height'])
+            rect = Rectangle((x, y), width, height, edgecolor='black', facecolor='none')
+            ax.add_patch(rect)
+        elif element.tag.endswith('polygon'):
+            # Drawing polygons
+            points_str = element.attrib['points']
+            points = [tuple(map(float, points_str.split()[i:i+2])) for i in range(0, len(points_str.split()), 2)]
+            polygon = Polygon(points, closed=True, edgecolor='black', facecolor='none')
+            ax.add_patch(polygon)
+
         ax.set_xticks([])
         ax.set_yticks([])
 
@@ -286,9 +319,9 @@ class LeftPart(QWidget):
             QMessageBox.warning(self, "Błąd", "Pola szerokości i wysokości nie mogą być puste.")
         else:
             # Jeśli pola nie są puste, sprawdzamy, czy zawierają jedynie cyfry lub wartości ujemne
-            if width_text.replace('-', '').isnumeric() and height_text.replace('-', '').isnumeric():
-                width = int(width_text)
-                height = int(height_text)
+            if width_text.replace('mm', '').isnumeric() and height_text.replace('mm', '').isnumeric():
+                width = int(float(width_text) * 100)
+                height = int(float(height_text) * 100)
                 # Dodatkowa walidacja: Sprawdzamy, czy szerokość i wysokość są większe niż zero
                 if width > 0 and height > 0:
                     # Wywołanie metody wyświetlającej pliki, ponieważ pola są poprawnie uzupełnione

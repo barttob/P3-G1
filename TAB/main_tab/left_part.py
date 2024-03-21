@@ -330,12 +330,11 @@ class LeftPart(QWidget):
             odafc.convert(temp_file_path, version='ACAD2018', audit=True)
 
             # Odnajdywanie skonwertowanego pliku DXF
-            dxf_files = [f for f in os.listdir(temp_folder) if f.endswith('.dxf')]
-            if len(dxf_files) > 0:
-                dxf_file_path = os.path.join(temp_folder, dxf_files[0])
-                self.read_and_display_dxf(dxf_file_path)
+            latest_dxf_file = max([os.path.join(temp_folder, f) for f in os.listdir(temp_folder) if f.endswith('.dxf')], key=os.path.getmtime)
+            if latest_dxf_file:
+                self.read_and_display_dxf(latest_dxf_file)
             else:
-                print("Brak pliku DXF po konwersji.")
+                print("Brak skonwertowanego pliku DXF.")
 
         except Exception as e:
             print("Błąd konwersji pliku DWG:", e)

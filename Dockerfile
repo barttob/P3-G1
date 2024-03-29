@@ -10,7 +10,7 @@ RUN apt-get update && \
     xcb x11-apps python3-pyqt5.qtwebkit \
     wget unzip gdebi xvfb
 
-RUN pip install matplotlib pyqt5 svg.path ezdxf 
+RUN pip install matplotlib pyqt5 svg.path ezdxf pygcode svg-to-gcode
 
 
 COPY ODAFileConverter_QT5_lnxX64_8.3dll_25.1.deb /app/tmp/

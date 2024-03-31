@@ -16,7 +16,7 @@ from ezdxf.addons import odafc
 import shutil
 import random
 import string
-
+from shapely.geometry import Point, Polygon, LineString
 
 class LeftPart(QWidget):
     def __init__(self):
@@ -125,8 +125,6 @@ class LeftPart(QWidget):
             tree = ET.parse(file_path)
             root = tree.getroot()
 
-            
-
             # Iteracja przez elementy w pliku SVG
             for element in root.iter():
                 # Sprawdzenie czy element jest rysunkiem (path)
@@ -191,6 +189,102 @@ class LeftPart(QWidget):
         ax.plot(x_points, y_points, color='black')
         ax.set_xticks([])
         ax.set_yticks([])
+
+    
+
+        def is_polygon(self, element):
+            return element.tag.endswith('polygon') or (element.tag.endswith('path') and 'd' in element.attrib)
+
+        def is_line(self, element):
+            return element.tag.endswith('line') or element.tag.endswith('polyline')
+
+        def is_image(self, element):
+            return element.tag.endswith('image')
+
+        def check_spatial_relationships(self, elements):
+            polygons = []
+            lines = []
+            images = []
+            other_elements = []
+            # Podział elementów na różne typy
+            for element in elements:
+                if is_polygon(element):
+                    polygons.append(element)
+                elif is_line(element):
+                    lines.append(element)
+                elif is_image(element):
+                    images.append(element)
+                else:
+                    other_elements.append(element)
+
+            # Sprawdzenie relacji przestrzennych między różnymi typami elementów
+            check_polygon_relations(polygons, lines)
+            check_polygon_relations(polygons, images)
+            check_line_relations(lines, images)
+
+            def check_polygon_relations(self, polygons, other_elements):
+                for polygon in polygons:
+                    for other_element in other_elements:
+                        if inside(polygon, other_element):
+                            print(f"{other_element.tag} znajduje się wewnątrz wielokąta.")
+                        elif intersects(polygon, other_element):
+                            print(f"{other_element.tag} przecina się z wielokątem.")
+                        else:
+                            print("Brak relacji przestrzennej między elementami.")
+
+        def check_line_relations(self, lines, other_elements):
+            for line in lines:
+                for other_element in other_elements:
+                    if intersects(line, other_element):
+                        print(f"{other_element.tag} przecina się z linią.")
+                    else:
+                        print("Brak relacji przestrzennej między elementami.")
+
+        def intersects(self, element1, element2):
+            # Wczytanie współrzędnych punktów
+            points1 = get_points(element1)
+            points2 = get_points(element2)
+
+            # Sprawdzenie przecięcia się linii
+            line1 = LineString(points1)
+            line2 = LineString(points2)
+            return line1.intersects(line2)
+
+        def inside(self, polygon, element):
+            # Wczytanie współrzędnych punktów wielokąta
+            polygon_points = get_points(polygon)
+            polygon_shape = Polygon(polygon_points)
+
+            # Wczytanie współrzędnych punktu elementu
+            element_point = get_point(element)
+
+            return polygon_shape.contains(element_point)
+
+        def get_points(self, element):
+            if is_polygon(element) or is_line(element):
+                # W przypadku wielokąta lub linii pobieramy współrzędne punktów z atrybutu 'points'
+                points_str = element.attrib['points']
+                points = [tuple(map(float, point.split(','))) for point in points_str.split()]
+            elif is_image(element):
+                # W przypadku obrazu pobieramy współrzędne jego lewego górnego rogu
+                x = float(element.attrib['x'])
+                y = float(element.attrib['y'])
+                points = [(x, y)]
+            else:
+                # Dla innych typów elementów zwracamy pusty zbiór punktów
+                points = []
+            return points
+
+        def get_point(self, element):
+            if is_image(element):
+                # W przypadku obrazu pobieramy współrzędne jego lewego górnego rogu
+                x = float(element.attrib['x'])
+                y = float(element.attrib['y'])
+                point = Point(x, y)
+            else:
+                # Dla innych typów elementów zwracamy pusty punkt
+                point = Point(0, 0)
+            return point
 
     def create_figure(self, entity):
         # Tworzenie nowej figury Matplotlib
@@ -286,12 +380,11 @@ class LeftPart(QWidget):
             odafc.convert(temp_file_path, version='ACAD2018', audit=True)
 
             # Odnajdywanie skonwertowanego pliku DXF
-            dxf_files = [f for f in os.listdir(temp_folder) if f.endswith('.dxf')]
-            if len(dxf_files) > 0:
-                dxf_file_path = os.path.join(temp_folder, dxf_files[0])
-                self.read_and_display_dxf(dxf_file_path)
+            latest_dxf_file = max([os.path.join(temp_folder, f) for f in os.listdir(temp_folder) if f.endswith('.dxf')], key=os.path.getmtime)
+            if latest_dxf_file:
+                self.read_and_display_dxf(latest_dxf_file)
             else:
-                print("Brak pliku DXF po konwersji.")
+                    print("Brak skonwertowanego pliku DXF.")
 
         except Exception as e:
             print("Błąd konwersji pliku DWG:", e)

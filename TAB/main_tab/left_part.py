@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox
 from PyQt5.QtCore import Qt
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -36,9 +36,36 @@ class LeftPart(QWidget):
         self.import_button.clicked.connect(self.import_files)
         layout.addWidget(self.import_button)
 
+        # Utworzenie ramki dla wymiarów płaszczyzny roboczej
+        dimension_frame = QGroupBox()
+        dimension_layout = QVBoxLayout()
+
+        # Ustawienie tytułu ramki z pogrubieniem za pomocą HTML
+        dimension_frame.setTitle('Wymiary płaszczyzny roboczej')
+
+        # Pole tekstowe dla szerokości
+        self.width_label = QLabel('Szerokość:')
+        self.width_input = QLineEdit()
+        dimension_layout.addWidget(self.width_label)
+        dimension_layout.addWidget(self.width_input)
+
+        # Pole tekstowe dla wysokości
+        self.height_label = QLabel('Wysokość:')
+        self.height_input = QLineEdit()
+        dimension_layout.addWidget(self.height_label)
+        dimension_layout.addWidget(self.height_input)
+
+        # Ustawienie układu dla ramki
+        dimension_frame.setLayout(dimension_layout)
+
+        # Dodanie ramki do głównego układu
+        layout.addWidget(dimension_frame)
+
         # Utworzenie tabeli do wyświetlania danych
         self.table = QTableWidget()
         layout.addWidget(self.table)
+
+
 
         # Ustawienie nagłówków tabeli
         headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Opcje']
@@ -347,7 +374,27 @@ class LeftPart(QWidget):
             checkbox_item.setChecked(False)
 
     def display_selected_file(self):
-        self.right_part.display_file(self.file_path_send)
+        width_text = self.width_input.text()
+        height_text = self.height_input.text()
+
+        # Sprawdzenie, czy pola szerokości i wysokości są puste
+        if not width_text.strip() and not height_text.strip():
+            # Jeśli pola są puste, wyświetlamy okno dialogowe z komunikatem
+            QMessageBox.warning(self, "Błąd", "Pola szerokości i wysokości nie mogą być puste.")
+        else:
+            # Jeśli pola nie są puste, sprawdzamy, czy zawierają jedynie cyfry lub wartości ujemne
+            if width_text.replace('-', '').isnumeric() and height_text.replace('-', '').isnumeric():
+                width = int(width_text)
+                height = int(height_text)
+                # Dodatkowa walidacja: Sprawdzamy, czy szerokość i wysokość są większe niż zero
+                if width > 0 and height > 0:
+                    # Wywołanie metody wyświetlającej pliki, ponieważ pola są poprawnie uzupełnione
+                    self.right_part.display_file(self.file_path_send, width, height)
+                else:
+                    QMessageBox.warning(self, "Błąd", "Szerokość i wysokość muszą być większe od zera.")
+            else:
+                # Jeśli pola zawierają niedozwolone znaki, wyświetlamy okno dialogowe z odpowiednim komunikatem
+                QMessageBox.warning(self, "Błąd", "Podane wartości szerokości i wysokości muszą być liczbami.")
 
     def convert_and_display_dwg(self, file_path):
         try:
@@ -384,7 +431,7 @@ class LeftPart(QWidget):
             if latest_dxf_file:
                 self.read_and_display_dxf(latest_dxf_file)
             else:
-                    print("Brak skonwertowanego pliku DXF.")
+                print("Brak skonwertowanego pliku DXF.")
 
         except Exception as e:
             print("Błąd konwersji pliku DWG:", e)

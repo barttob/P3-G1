@@ -314,11 +314,8 @@ class RightPart(QWidget):
         self.inputPoints = []
         for file_path in file_paths:
             file_to_parse = Parser(file_path)
-            if file_path.lower().endswith('.dxf'):
-                self.inputPoints += file_to_parse.parse_dxf()
-            elif file_path.lower().endswith('.svg'):
-                self.inputPoints += file_to_parse.parse_svg()
-                
+            self.inputPoints += file_to_parse.parse_svg()
+
         self.volume = Box(width, height)
         # Parametry nestingu
         nfp_config = NfpConfig()
@@ -374,7 +371,7 @@ class RightPart(QWidget):
         # Eksploracja otworow
         nfp_config.explore_holes = global_explore_holes
 
-        spacing = int(global_space_between_objects)
+        spacing = int(global_space_between_objects * 0.352777778)
 
         num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
         
@@ -390,14 +387,15 @@ class RightPart(QWidget):
             x_values = []
             y_values = []
             transItem = item.transformedShape()
-            rows = len(transItem.toString().strip().split('\n')) - 1
-            for i in range(rows - 1):
-                x_value = transItem.vertex(i).x()
-                y_value = transItem.vertex(i).y()
-                x_values.append(x_value)
-                y_values.append(y_value)
-            random_color = (random.random(), random.random(), random.random())
-            ax.plot(x_values, y_values, color=random_color, linewidth=1)
+            if item.binId() == 0:
+                rows = len(transItem.toString().strip().split('\n')) - 1
+                for i in range(rows - 1):
+                    x_value = transItem.vertex(i).x()
+                    y_value = transItem.vertex(i).y()
+                    x_values.append(x_value)
+                    y_values.append(y_value)
+                random_color = (random.random(), random.random(), random.random())
+                ax.plot(x_values, y_values, color=random_color, linewidth=1)
 
         ax.set_aspect('equal')
         ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])

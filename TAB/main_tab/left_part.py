@@ -16,6 +16,7 @@ from ezdxf.addons import odafc
 import shutil
 import random
 import string
+from utils.parser import Parser
 
 
 class LeftPart(QWidget):
@@ -116,37 +117,42 @@ class LeftPart(QWidget):
 
     def read_and_display_dxf(self, file_path):
         try:
-            # Otwarcie pliku DXF
-            doc = readfile(file_path)
+            file_to_convert = Parser(file_path)
+            self.file_path_send.pop()
+            converted_file_path = file_to_convert.dxf_to_svg()
+            self.read_and_display_svg(converted_file_path)
+            self.file_path_send.append(converted_file_path)
+            # # Otwarcie pliku DXF
+            # doc = readfile(file_path)
 
             
 
-            # Iteracja przez obiekty w przestrzeni modelu
-            for entity in doc.modelspace():
-                # Tworzenie miniatury figury
-                figure_canvas = self.create_figure(entity)
+            # # Iteracja przez obiekty w przestrzeni modelu
+            # for entity in doc.modelspace():
+            #     # Tworzenie miniatury figury
+            #     figure_canvas = self.create_figure(entity)
 
-                # Pobranie danych o figury
-                entity_type = entity.dxftype()
-                entity_data = self.get_entity_data(entity)
+            #     # Pobranie danych o figury
+            #     entity_type = entity.dxftype()
+            #     entity_data = self.get_entity_data(entity)
 
-                # Dodanie wiersza do tabeli
-                row_position = self.table.rowCount()
-                self.table.insertRow(row_position)
+            #     # Dodanie wiersza do tabeli
+            #     row_position = self.table.rowCount()
+            #     self.table.insertRow(row_position)
 
-                # Wstawienie miniatury figury do pierwszej kolumny
-                self.table.setCellWidget(row_position, 0, figure_canvas)
+            #     # Wstawienie miniatury figury do pierwszej kolumny
+            #     self.table.setCellWidget(row_position, 0, figure_canvas)
 
-                # Wstawienie danych o figury do pozostałych kolumn
-                self.table.setItem(row_position, 1, QTableWidgetItem(entity_type))
-                self.table.setItem(row_position, 2, QTableWidgetItem(str(entity_data)))
+            #     # Wstawienie danych o figury do pozostałych kolumn
+            #     self.table.setItem(row_position, 1, QTableWidgetItem(entity_type))
+            #     self.table.setItem(row_position, 2, QTableWidgetItem(str(entity_data)))
 
-                # Dodanie checkboxa do zaznaczania wiersza
-                checkbox_item = QCheckBox()
-                self.table.setCellWidget(row_position, 3, checkbox_item)
+            #     # Dodanie checkboxa do zaznaczania wiersza
+            #     checkbox_item = QCheckBox()
+            #     self.table.setCellWidget(row_position, 3, checkbox_item)
 
-                # Ustawienie stałego rozmiaru dla komórki z miniaturą
-                self.table.verticalHeader().setDefaultSectionSize(100)
+            #     # Ustawienie stałego rozmiaru dla komórki z miniaturą
+            #     self.table.verticalHeader().setDefaultSectionSize(100)
 
         except Exception as e:
             print("Błąd odczytu pliku DXF:", e)
@@ -263,36 +269,36 @@ class LeftPart(QWidget):
 
         return canvas
     
-    def draw_entity(self, ax, entity):
-        if entity.dxftype() == 'SPLINE':
-            # Przetwarzanie krzywej składanej (spline)
-            control_points = list(entity.control_points)
-            x = [p[0] for p in control_points]
-            y = [p[1] for p in control_points]
-            ax.plot(x, y, color='black')
-        elif entity.dxftype() == 'LINE':
-            # Przetwarzanie linii
-            start_point = entity.dxf.start
-            end_point = entity.dxf.end
-            ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='black')
-        elif entity.dxftype() == 'LWPOLYLINE':
-            # Przetwarzanie polilinii
-            points = list(entity.points())
-            x = [p[0] for p in points]
-            y = [p[1] for p in points]
-            ax.plot(x, y, color='black')
-        elif entity.dxftype() == 'CIRCLE':
-            # Przetwarzanie okręgów
-            center = entity.dxf.center
-            radius = entity.dxftype().radius
-            circle = plt.Circle((center[0], center[1]), radius, fill=False, color='black')
-            ax.add_artist(circle)
-        elif entity.dxftype() == 'TEXT':
-            # Przetwarzanie tekstu
-            text = entity.dxf.text
-            insertion_point = entity.dxf.insert
-            ax.text(insertion_point[0], insertion_point[1], text, color='black')
-        # Dodaj obsługę innych typów obiektów tutaj...
+    # def draw_entity(self, ax, entity):
+    #     if entity.dxftype() == 'SPLINE':
+    #         # Przetwarzanie krzywej składanej (spline)
+    #         control_points = list(entity.control_points)
+    #         x = [p[0] for p in control_points]
+    #         y = [p[1] for p in control_points]
+    #         ax.plot(x, y, color='black')
+    #     elif entity.dxftype() == 'LINE':
+    #         # Przetwarzanie linii
+    #         start_point = entity.dxf.start
+    #         end_point = entity.dxf.end
+    #         ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], color='black')
+    #     elif entity.dxftype() == 'LWPOLYLINE':
+    #         # Przetwarzanie polilinii
+    #         points = list(entity.points())
+    #         x = [p[0] for p in points]
+    #         y = [p[1] for p in points]
+    #         ax.plot(x, y, color='black')
+    #     elif entity.dxftype() == 'CIRCLE':
+    #         # Przetwarzanie okręgów
+    #         center = entity.dxf.center
+    #         radius = entity.dxftype().radius
+    #         circle = plt.Circle((center[0], center[1]), radius, fill=False, color='black')
+    #         ax.add_artist(circle)
+    #     elif entity.dxftype() == 'TEXT':
+    #         # Przetwarzanie tekstu
+    #         text = entity.dxf.text
+    #         insertion_point = entity.dxf.insert
+    #         ax.text(insertion_point[0], insertion_point[1], text, color='black')
+    #     # Dodaj obsługę innych typów obiektów tutaj...
 
     def get_entity_data(self, entity):
         # Funkcja do pobrania danych o figury z pliku DXF
@@ -366,6 +372,8 @@ class LeftPart(QWidget):
             dxf_files = [f for f in os.listdir(temp_folder) if f.endswith('.dxf')]
             if len(dxf_files) > 0:
                 dxf_file_path = os.path.join(temp_folder, dxf_files[0])
+                self.file_path_send.pop()
+                self.file_path_send.append(dxf_file_path)
                 self.read_and_display_dxf(dxf_file_path)
             else:
                 print("Brak pliku DXF po konwersji.")

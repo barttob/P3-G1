@@ -34,10 +34,8 @@ class RightPart(QWidget):
         self.inputPoints = []
         for file_path in file_paths:
             file_to_parse = Parser(file_path)
-            if file_path.lower().endswith('.dxf'):
-                self.inputPoints += file_to_parse.parse_dxf()
-            elif file_path.lower().endswith('.svg'):
-                self.inputPoints += file_to_parse.parse_svg()
+            self.inputPoints += file_to_parse.parse_svg()
+            
         config = NfpConfig()
         config.alignment = NfpConfig.Alignment.BOTTOM_LEFT
         config.starting_point = NfpConfig.Alignment.CENTER

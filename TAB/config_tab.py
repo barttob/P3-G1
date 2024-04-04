@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox
 from PyQt5.QtCore import pyqtSignal, Qt
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
 
@@ -83,7 +83,14 @@ class ConfigTab(QWidget):
         label_rotations.setStyleSheet("font-size: 12px;")
 
         self.rotations_combobox = QComboBox()
+        self.rotations_combobox.addItem("0")
+        self.rotations_combobox.addItem("1")
+        self.rotations_combobox.addItem("2")
+        self.rotations_combobox.addItem("3")
         self.rotations_combobox.addItem("4")
+        self.rotations_combobox.addItem("5")
+        self.rotations_combobox.addItem("6")
+        self.rotations_combobox.addItem("7")
         self.rotations_combobox.addItem("8")
         self.rotations_combobox.setFixedWidth(100)
         self.rotations_combobox.setStyleSheet("background-color: white;")
@@ -253,24 +260,43 @@ class ConfigTab(QWidget):
 
     def set_default_values(self):
         # Ustawienie wartości domyślnych dla poszczególnych elementów
-        self.space_between_objects_lineedit.setText("10")
+        self.space_between_objects_lineedit.setText("500")
         self.explore_holes_checkbox.setChecked(False)
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)
         self.accuracy_lineedit.setText("0.65")
-        self.rotations_combobox.setCurrentIndex(0)
+        self.rotations_combobox.setCurrentIndex(4)
         self.starting_point_combobox.setCurrentIndex(0)
 
     def submit_value(self):
-        space_between_objects = float(self.space_between_objects_lineedit.text())
+        # Get the text from line edits and comboboxes
+        space_between_objects_text = self.space_between_objects_lineedit.text()
+        accuracy_text = self.accuracy_lineedit.text()
+
+        # space_between_objects = float(self.space_between_objects_lineedit.text())
         explore_holes = self.explore_holes_checkbox.isChecked()
         parallel = self.parallel_checkbox.isChecked()
         optimization = self.optimization_combobox.currentText()
-        accuracy = float(self.accuracy_lineedit.text())
+        # accuracy = float(self.accuracy_lineedit.text())
         rotations = int(self.rotations_combobox.currentText())
         starting_point = self.starting_point_combobox.currentText()
+
+        # Validate the input for space_between_objects
+        try:
+            space_between_objects = float(space_between_objects_text)
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Space between objects must be a valid number.")
+            return
+
+        # Validate the input for accuracy
+        try:
+            accuracy = float(accuracy_text)
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Accuracy must be a valid number.")
+            return
         
         # Przekazanie wszystkich wartości do funkcji update w right_part
         self.right_part.update(space_between_objects, explore_holes, parallel, optimization, accuracy, rotations, starting_point)
+        QMessageBox.information(self, "Success", "Configuration updated successfully.")
 
 

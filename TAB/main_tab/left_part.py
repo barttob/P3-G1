@@ -1,7 +1,8 @@
 import os
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtXml import QDomDocument
 from PyQt5.QtGui import QDoubleValidator
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -20,6 +21,7 @@ import random
 import string
 from utils.parser import Parser
 from shapely.geometry import Point, Polygon, LineString
+
 
 class LeftPart(QWidget):
     def __init__(self):
@@ -108,265 +110,381 @@ class LeftPart(QWidget):
         self.file_path_send = []  
 
     def import_files(self):
-        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Wybierz pliki', '.', 'DXF Files (*.dxf);;DWG Files (*.dwg);;SVG Files (*.svg)')
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Wybierz pliki', '.', ' (*.dxf *.dwg *.svg);;DXF Files (*.dxf);;DWG Files (*.dwg);;SVG Files (*.svg)')
         for file_path in file_paths:
             self.file_path_send += file_paths
             if file_path.lower().endswith('.dxf'):
                 self.read_and_display_dxf(file_path)
             elif file_path.lower().endswith('.svg'):
-                self.read_and_display_svg(file_path)
+                self.analize_svg(file_path)
             elif file_path.lower().endswith('.dwg'):
                 self.convert_and_display_dwg(file_path)
 
-    def read_and_display_dxf(self, file_path):
+    def analize_svg(self, file_path_or_root):
+            try:
+                if isinstance(file_path_or_root, str):
+                    tree = ET.parse(file_path_or_root)
+                    root = tree.getroot()
+                else:
+                    root = file_path_or_root
+
+                # Sprawdzenie obecności grup w pliku SVG
+                has_groups = any(element.tag == '{http://www.w3.org/2000/svg}g' for element in root.iter())
+
+                if has_groups:
+                    print("Są grupy")
+                    for group in root.findall('.//{http://www.w3.org/2000/svg}g'):
+                        self.process_group_dialog(group)
+                else:
+                    self.read_and_display_svg(root)
+
+            except Exception as e:
+                print("Błąd odczytu pliku SVG:", e)
+   
+   
+    def process_group_dialog(self, group):
+       
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setText("Czy narysować grupę w całości?")
+        msg_box.setWindowTitle("Process Group")
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        response = msg_box.exec_()
+
+        if response == QMessageBox.Yes:
+            self.process_group(group)
+        else:
+            root = ET.Element("root")  
+            root.extend(list(group))  
+
+            self.analize_svg(root)
+
+    def process_group(self, group):
         try:
-            file_to_convert = Parser(file_path)
-            self.file_path_send.pop()
-            converted_file_path = file_to_convert.dxf_to_svg()
-            self.read_and_display_svg(converted_file_path)
-            self.file_path_send.append(converted_file_path)
-            # # Otwarcie pliku DXF
-            # doc = readfile(file_path)
+            # Pobranie wszystkich elementów ścieżki w grupie
+            paths = [element for element in group.iter() if element.tag.endswith('path')]
 
-            
+            # Tworzenie miniatury figury dla wszystkich ścieżek w grupie
+            figure_canvas = self.create_svg_figure(paths)
 
-            # # Iteracja przez obiekty w przestrzeni modelu
-            # for entity in doc.modelspace():
-            #     # Tworzenie miniatury figury
-            #     figure_canvas = self.create_figure(entity)
+            # Dodanie wiersza do tabeli
+            row_position = self.table.rowCount()
+            self.table.insertRow(row_position)
 
-            #     # Pobranie danych o figury
-            #     entity_type = entity.dxftype()
-            #     entity_data = self.get_entity_data(entity)
+            # Wstawienie miniatury figury do pierwszej kolumny
+            self.table.setCellWidget(row_position, 0, figure_canvas)
 
-            #     # Dodanie wiersza do tabeli
-            #     row_position = self.table.rowCount()
-            #     self.table.insertRow(row_position)
+            # Wstawienie typu elementu do drugiej kolumny
+            self.table.setItem(row_position, 1, QTableWidgetItem('SVG Group'))
 
-            #     # Wstawienie miniatury figury do pierwszej kolumny
-            #     self.table.setCellWidget(row_position, 0, figure_canvas)
+            # Wstawienie danych (ścieżki) do trzeciej kolumny - pusty string, bo to cała grupa
+            self.table.setItem(row_position, 2, QTableWidgetItem(''))
 
-            #     # Wstawienie danych o figury do pozostałych kolumn
-            #     self.table.setItem(row_position, 1, QTableWidgetItem(entity_type))
-            #     self.table.setItem(row_position, 2, QTableWidgetItem(str(entity_data)))
+            # Dodanie checkboxa do zaznaczania wiersza
+            checkbox_item = QCheckBox()
+            self.table.setCellWidget(row_position, 3, checkbox_item)
 
-            #     # Dodanie checkboxa do zaznaczania wiersza
-            #     checkbox_item = QCheckBox()
-            #     self.table.setCellWidget(row_position, 3, checkbox_item)
-
-            #     # Ustawienie stałego rozmiaru dla komórki z miniaturą
-            #     self.table.verticalHeader().setDefaultSectionSize(100)
+            # Ustawienie stałego rozmiaru dla komórki z miniaturą
+            self.table.verticalHeader().setDefaultSectionSize(145)
 
         except Exception as e:
-            print("Błąd odczytu pliku DXF:", e)
+            print("Błąd przetwarzania grupy SVG:", e)
 
-    def read_and_display_svg(self, file_path):
-        try:
-            # Open the SVG file
-            tree = ET.parse(file_path)
-            root = tree.getroot()
 
-            # Iteracja przez elementy w pliku SVG
-            for element in root.iter():
-                # Check if the element is a path, rectangle, or polygon
-                if element.tag.endswith('path') or element.tag.endswith('rect') or element.tag.endswith('polygon'):
-                    # Create a thumbnail of the figure
-                    figure_canvas = self.create_svg_figure(element)
 
-                    # Add a row to the table
+
+    def read_and_display_svg(self, root):
+            try:
+                
+                # Pobranie wszystkich elementów ścieżki i linii
+                paths_and_lines = [element for element in root.iter() if element.tag.endswith('path') or element.tag.endswith('line')]
+
+                # Grupowanie elementów ścieżki i linii wg. ich współrzędnych początkowych i końcowych
+                path_line_groups = {}
+                for element in paths_and_lines:
+                    if element.tag.endswith('line'):
+                        # Pominięcie pojedynczych linii, zostaną one połączone z innymi liniami mającymi wspólne punkty końcowe
+                        continue
+                    start_point, end_point = self.get_start_and_end_points(element)
+                    if (start_point, end_point) in path_line_groups:
+                        path_line_groups[(start_point, end_point)].append(element)
+                    else:
+                        path_line_groups[(start_point, end_point)] = [element]
+
+                # Łączenie pojedynczych linii z innymi liniami mającymi wspólne punkty końcowe
+                lines_to_merge = []
+                for element in paths_and_lines:
+                    if element.tag.endswith('line'):
+                        start_point = self.get_start_point(element)
+                        end_point = self.get_end_point(element)
+                        for group_key, group_elements in path_line_groups.items():
+                            if start_point == group_key[1]:
+                                lines_to_merge.append((element, group_elements))
+                            elif end_point == group_key[0]:
+                                lines_to_merge.append((group_elements, element))
+
+                for line1, line2 in lines_to_merge:
+                    path_line_groups.pop((self.get_start_point(line1), self.get_end_point(line1)), None)
+                    path_line_groups.pop((self.get_start_point(line2), self.get_end_point(line2)), None)
+                    merged_line = line1 + line2
+                    start_point = self.get_start_point(line1)
+                    end_point = self.get_end_point(line2)
+                    path_line_groups[(start_point, end_point)] = merged_line
+
+                # Iteracja przez grupy elementów ścieżki i łączone linie
+                for group in path_line_groups.values():
+                    # Pominięcie grupy, jeśli zawiera tylko linie
+                    if all(element.tag.endswith('line') for element in group):
+                        continue
+
+                    # Tworzenie miniatury figury
+                    figure_canvas = self.create_svg_figure(group)
+
+                    # Dodanie wiersza do tabeli
                     row_position = self.table.rowCount()
                     self.table.insertRow(row_position)
 
-                    # Insert the thumbnail into the first column
+                    # Wstawienie miniatury figury do pierwszej kolumny
                     self.table.setCellWidget(row_position, 0, figure_canvas)
 
-                    # Insert the type of element into the second column
-                    if element.tag.endswith('path'):
-                        element_type = 'SVG Path'
-                    elif element.tag.endswith('rect'):
-                        element_type = 'SVG Rectangle'
-                    elif element.tag.endswith('polygon'):
-                        element_type = 'SVG Polygon'
-                    self.table.setItem(row_position, 1, QTableWidgetItem(element_type))
+                    # Wstawienie typu elementu do drugiej kolumny
+                    self.table.setItem(row_position, 1, QTableWidgetItem('SVG Path'))
 
-                    # Insert data (path, rectangle properties, or polygon points) into the third column
-                    if element.tag.endswith('path'):
-                        self.table.setItem(row_position, 2, QTableWidgetItem(element.attrib['d']))
-                    elif element.tag.endswith('rect'):
-                        rect_data = f"x: {element.attrib['x']}, y: {element.attrib['y']}, width: {element.attrib['width']}, height: {element.attrib['height']}"
-                        self.table.setItem(row_position, 2, QTableWidgetItem(rect_data))
-                    elif element.tag.endswith('polygon'):
-                        self.table.setItem(row_position, 2, QTableWidgetItem(element.attrib['points']))
+                    # Wstawienie danych (ścieżki) do trzeciej kolumny
+                    path_data = ' '.join(path.attrib['d'] for path in group)
+                    self.table.setItem(row_position, 2, QTableWidgetItem(path_data))
 
-                    # Add a checkbox to select the row
+                    # Dodanie checkboxa do zaznaczania wiersza
                     checkbox_item = QCheckBox()
                     self.table.setCellWidget(row_position, 3, checkbox_item)
 
-                    # Set a fixed size for the thumbnail cell
-                    self.table.verticalHeader().setDefaultSectionSize(100)
+                    # Ustawienie stałego rozmiaru dla komórki z miniaturą
+                    self.table.verticalHeader().setDefaultSectionSize(145)
 
-        except Exception as e:
-            print("Error reading SVG file:", e)
+            except Exception as e:
+                print("Błąd odczytu pliku SVG:", e)
 
 
-    def create_svg_figure(self, element):
+    def create_svg_figure(self, paths):
         # Tworzenie nowej figury Matplotlib
         fig = Figure(figsize=(2, 2))
         ax = fig.add_subplot(111)
 
-        # Rysowanie figury
-        self.draw_svg_element(ax, element)
+        # Rysowanie ścieżek
+        for path in paths:
+            self.draw_svg_element(ax, path)
 
         # Konwersja figury do formatu odpowiedniego dla wyświetlenia w tabeli
         canvas = FigureCanvas(fig)
         canvas.draw()
 
         return canvas
-    
-    def draw_svg_element(self, ax, element):
-        if element.tag.endswith('path'):
-            # Drawing paths
-            path_data = element.attrib['d']
-            path = parse_path(path_data)
 
-            # Initialize lists to store path points
+
+    def draw_svg_element(self, ax, path):
+        # Pobranie danych o ścieżce z elementu SVG i narysowanie jej na wykresie
+        path_data = path.attrib['d']
+        path = parse_path(path_data)
+
+        # Rysowanie ścieżki
+        for segment in path:
             x_points = []
             y_points = []
 
-            for segment in path:
-                for t in np.linspace(0, 1, num=100):
-                    point = segment.point(t)
-                    x_points.append(point.real)
-                    y_points.append(point.imag)
+            # Iteracja przez punkty segmentu
+            for t in np.linspace(0, 1, num=100):
+                # Pobranie współrzędnych punktu na ścieżce dla danego parametru t
+                point = segment.point(t)
+                x_points.append(point.real)
+                y_points.append(point.imag)
 
+            # Narysowanie linii dla tego segmentu
             ax.plot(x_points, y_points, color='black')
-        elif element.tag.endswith('rect'):
-            # Drawing rectangles
-            x = float(element.attrib['x'])
-            y = float(element.attrib['y'])
-            width = float(element.attrib['width'])
-            height = float(element.attrib['height'])
-            rect = Rectangle((x, y), width, height, edgecolor='black', facecolor='none')
-            ax.add_patch(rect)
-        elif element.tag.endswith('polygon'):
-            # Drawing polygons
-            points_str = element.attrib['points']
-            points = [tuple(map(float, points_str.split()[i:i+2])) for i in range(0, len(points_str.split()), 2)]
-            polygon = Polygon(points, closed=True, edgecolor='black', facecolor='none')
-            ax.add_patch(polygon)
 
         ax.set_xticks([])
         ax.set_yticks([])
 
-    
 
-        def is_polygon(self, element):
-            return element.tag.endswith('polygon') or (element.tag.endswith('path') and 'd' in element.attrib)
+    def get_start_and_end_points(self, path):
+        # Pobranie danych o ścieżce z elementu SVG
+        path_data = path.attrib['d']
+        path = parse_path(path_data)
 
-        def is_line(self, element):
-            return element.tag.endswith('line') or element.tag.endswith('polyline')
+        # Pobranie współrzędnych punktu początkowego i końcowego ścieżki
+        start_point = path.point(0)
+        end_point = path.point(1)
+        return start_point, end_point
+   
+    def get_end_point(self, path):
+        # Pobranie danych o ścieżce z elementu SVG
+        path_data = path.attrib['d']
+        path = parse_path(path_data)
 
-        def is_image(self, element):
-            return element.tag.endswith('image')
+        # Pobranie współrzędnych punktu końcowego ścieżki
+        end_point = path.point(1)
+        return end_point
 
-        def check_spatial_relationships(self, elements):
-            polygons = []
-            lines = []
-            images = []
-            other_elements = []
-            # Podział elementów na różne typy
-            for element in elements:
-                if is_polygon(element):
-                    polygons.append(element)
-                elif is_line(element):
-                    lines.append(element)
-                elif is_image(element):
-                    images.append(element)
-                else:
-                    other_elements.append(element)
+    def get_start_point(self, path):
+        # Pobranie danych o ścieżce z elementu SVG
+        path_data = path.attrib['d']
+        path = parse_path(path_data)
 
-            # Sprawdzenie relacji przestrzennych między różnymi typami elementów
-            check_polygon_relations(polygons, lines)
-            check_polygon_relations(polygons, images)
-            check_line_relations(lines, images)
+        # Pobranie współrzędnych punktu początkowego ścieżki
+        start_point = path.point(0)
+        return start_point
 
-            def check_polygon_relations(self, polygons, other_elements):
-                for polygon in polygons:
-                    for other_element in other_elements:
-                        if inside(polygon, other_element):
-                            print(f"{other_element.tag} znajduje się wewnątrz wielokąta.")
-                        elif intersects(polygon, other_element):
-                            print(f"{other_element.tag} przecina się z wielokątem.")
-                        else:
-                            print("Brak relacji przestrzennej między elementami.")
+    def is_polygon(self, element):
+        return element.tag.endswith('polygon') or (element.tag.endswith('path') and 'd' in element.attrib)
 
-        def check_line_relations(self, lines, other_elements):
-            for line in lines:
-                for other_element in other_elements:
-                    if intersects(line, other_element):
-                        print(f"{other_element.tag} przecina się z linią.")
+    def is_line(self, element):
+        return element.tag.endswith('line') or element.tag.endswith('polyline')
+
+    def is_image(self, element):
+        return element.tag.endswith('image')
+
+    def check_spatial_relationships(self, elements):
+        polygons = []
+        lines = []
+        images = []
+        other_elements = []
+        # Podział elementów na różne typy
+        for element in elements:
+            if self.is_polygon(element):
+                polygons.append(element)
+            elif self.is_line(element):
+                lines.append(element)
+            elif self.is_image(element):
+                images.append(element)
+            else:
+                other_elements.append(element)
+
+        # Sprawdzenie relacji przestrzennych między różnymi typami elementów
+        self.check_polygon_relations(polygons, lines)
+        self.check_polygon_relations(polygons, images)
+        self.check_line_relations(lines, images)
+        self.check_other_relations(other_elements)
+
+    def check_other_relations(self, other_elements):
+        # Sprawdzenie relacji przestrzennych między innymi typami elementów
+        for element1 in other_elements:
+            for element2 in other_elements:
+                if element1 != element2:
+                    if self.intersects(element1, element2):
+                        print(f"Relacja przestrzenna między {element1.tag} a {element2.tag}: Przecinają się.")
                     else:
-                        print("Brak relacji przestrzennej między elementami.")
+                        print(f"Relacja przestrzenna między {element1.tag} a {element2.tag}: Brak przecięcia.")
 
-        def intersects(self, element1, element2):
-            # Wczytanie współrzędnych punktów
-            points1 = get_points(element1)
-            points2 = get_points(element2)
+    def check_polygon_relations(self, polygons, other_elements):
+        for polygon in polygons:
+            for other_element in other_elements:
+                if self.is_polygon(other_element):
+                    if self.inside(polygon, other_element):
+                        print(f"{other_element.tag} znajduje się wewnątrz wielokąta {polygon.tag}.")
+                    elif self.intersects(polygon, other_element):
+                        print(f"{other_element.tag} przecina się z wielokątem {polygon.tag}.")
+                    else:
+                        print(f"Brak relacji przestrzennej między {other_element.tag} a wielokątem {polygon.tag}.")
+                elif self.is_line(other_element):
+                    if self.line_inside_polygon(polygon, other_element):
+                        print(f"Linia znajduje się wewnątrz wielokąta {polygon.tag}.")
+                    elif self.line_intersects_polygon(polygon, other_element):
+                        print(f"Linia przecina się z wielokątem {polygon.tag}.")
+                    else:
+                        print(f"Brak relacji przestrzennej między linią a wielokątem {polygon.tag}.")
+                elif self.is_image(other_element):
+                    if self.image_inside_polygon(polygon, other_element):
+                        print(f"Obraz znajduje się wewnątrz wielokąta {polygon.tag}.")
+                    else:
+                        print(f"Brak relacji przestrzennej między obrazem a wielokątem {polygon.tag}.")
 
-            # Sprawdzenie przecięcia się linii
-            line1 = LineString(points1)
-            line2 = LineString(points2)
-            return line1.intersects(line2)
+    def line_inside_polygon(self, polygon, line):
+        # Sprawdzenie czy wszystkie punkty linii znajdują się wewnątrz wielokąta
+        line_points = self.get_points(line)
+        polygon_points = self.get_points(polygon)
+        for point in line_points:
+            if not Point(point).within(Polygon(polygon_points)):
+                return False
+        return True
 
-        def inside(self, polygon, element):
-            # Wczytanie współrzędnych punktów wielokąta
-            polygon_points = get_points(polygon)
-            polygon_shape = Polygon(polygon_points)
+    def line_intersects_polygon(self, polygon, line):
+        # Sprawdzenie czy linia przecina się z którymkolwiek bokiem wielokąta
+        line_points = self.get_points(line)
+        polygon_points = self.get_points(polygon)
+        for i in range(len(polygon_points)):
+            p1 = polygon_points[i]
+            p2 = polygon_points[(i + 1) % len(polygon_points)]
+            segment = LineString([p1, p2])
+            line_segment = LineString(line_points)
+            if segment.intersects(line_segment):
+                return True
+        return False
 
-            # Wczytanie współrzędnych punktu elementu
-            element_point = get_point(element)
+    def image_inside_polygon(self, polygon, image):
+        # Sprawdzenie czy lewy górny róg obrazu znajduje się wewnątrz wielokąta
+        image_point = self.get_point(image)
+        polygon_points = self.get_points(polygon)
+        return Point(image_point).within(Polygon(polygon_points))
 
-            return polygon_shape.contains(element_point)
 
-        def get_points(self, element):
-            if is_polygon(element) or is_line(element):
-                # W przypadku wielokąta lub linii pobieramy współrzędne punktów z atrybutu 'points'
-                points_str = element.attrib['points']
-                points = [tuple(map(float, point.split(','))) for point in points_str.split()]
-            elif is_image(element):
-                # W przypadku obrazu pobieramy współrzędne jego lewego górnego rogu
-                x = float(element.attrib['x'])
-                y = float(element.attrib['y'])
-                points = [(x, y)]
-            else:
-                # Dla innych typów elementów zwracamy pusty zbiór punktów
-                points = []
-            return points
+    def check_line_relations(self, lines, other_elements):
+        for line in lines:
+            for other_element in other_elements:
+                if self.intersects(line, other_element):
+                    print(f"{other_element.tag} przecina się z linią.")
+                else:
+                    print("Brak relacji przestrzennej między elementami.")
 
-        def get_point(self, element):
-            if is_image(element):
-                # W przypadku obrazu pobieramy współrzędne jego lewego górnego rogu
-                x = float(element.attrib['x'])
-                y = float(element.attrib['y'])
-                point = Point(x, y)
-            else:
-                # Dla innych typów elementów zwracamy pusty punkt
-                point = Point(0, 0)
-            return point
+    def intersects(self, element1, element2):
+        # Wczytanie współrzędnych punktów
+        points1 = self.get_points(element1)
+        points2 = self.get_points(element2)
 
-    def create_figure(self, entity):
-        # Tworzenie nowej figury Matplotlib
-        fig = Figure(figsize=(2, 2))
-        ax = fig.add_subplot(111)
+        # Sprawdzenie czy punkty końcowe jednej linii są takie same jak punkty początkowe innej linii
+        if points1[-1] == points2[0]:
+            return True
 
-        # Rysowanie figury
-        self.draw_entity(ax, entity)
+        # Sprawdzenie czy linie się przecinają
+        line1 = LineString(points1)
+        line2 = LineString(points2)
+        return line1.intersects(line2)
 
-        # Konwersja figury do formatu odpowiedniego dla wyświetlenia w tabeli
-        canvas = FigureCanvas(fig)
-        canvas.draw()
+    def inside(self, polygon, element):
+        # Wczytanie współrzędnych punktów wielokąta
+        polygon_points = self.get_points(polygon)
+        polygon_shape = Polygon(polygon_points)
 
-        return canvas
+        # Wczytanie współrzędnych punktu elementu
+        element_point = self.get_point(element)
+
+        return polygon_shape.contains(element_point)
+
+    def get_points(self, element):
+        if self.is_polygon(element) or self.is_line(element):
+            # W przypadku wielokąta lub linii pobieramy współrzędne punktów z atrybutu 'points'
+            points_str = element.attrib['points']
+            points = [tuple(map(float, point.split(','))) for point in points_str.split()]
+        elif self.is_image(element):
+            # W przypadku obrazu pobieramy współrzędne jego lewego górnego rogu
+            x = float(element.attrib['x'])
+            y = float(element.attrib['y'])
+            points = [(x, y)]
+        else:
+            # Dla innych typów elementów zwracamy pusty zbiór punktów
+            points = []
+        return points
+
+    def get_point(self, element):
+        if self.is_image(element):
+            # W przypadku obrazu pobieramy współrzędne jego lewego górnego rogu
+            x = float(element.attrib['x'])
+            y = float(element.attrib['y'])
+            point = Point(x, y)
+        else:
+            # Dla innych typów elementów zwracamy pusty punkt
+            point = Point(0, 0)
+        return point
+
     
     # def draw_entity(self, ax, entity):
     #     if entity.dxftype() == 'SPLINE':

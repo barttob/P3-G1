@@ -295,6 +295,11 @@ class RightPart(QWidget):
                 msg.setWindowTitle("Error")
                 msg.exec_()
                 return
+    
+    def generate_rotations(self, num_rotations):
+        angle_step = 2 * pi / num_rotations
+        rotations = [i * angle_step for i in range(num_rotations)]
+        return rotations
 
     def display_file(self, file_paths, width, height):
         # Access global variables
@@ -350,20 +355,8 @@ class RightPart(QWidget):
             nfp_config.rotations = []
         elif global_rotations == 1:
             nfp_config.rotations = [0]
-        elif global_rotations == 2:
-            nfp_config.rotations = [0, pi]
-        elif global_rotations == 3:
-            nfp_config.rotations = [0, 0.5 * pi, pi]
-        elif global_rotations == 4:
-            nfp_config.rotations = [0, 0.5 * pi, pi, 1.5 * pi]
-        elif global_rotations == 5:
-            nfp_config.rotations = [0, 0.25 * pi, 0.5 * pi, 0.75 * pi, pi]
-        elif global_rotations == 6:
-            nfp_config.rotations = [0, 0.333 * pi, 0.667 * pi, pi, 1.333 * pi, 1.667 * pi]
-        elif global_rotations == 7:
-            nfp_config.rotations = [0, 0.286 * pi, 0.571 * pi, 0.857 * pi, pi, 1.286 * pi, 1.571 * pi]
-        elif global_rotations == 8:
-            nfp_config.rotations = [i * 0.125 * pi for i in range(8)]
+        else:
+            nfp_config.rotations = self.generate_rotations(global_rotations)
         # Dokladnosc
         nfp_config.accuracy = global_accuracy
         # Wielowatkowosc

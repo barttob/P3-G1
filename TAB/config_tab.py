@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QSlider
 from PyQt5.QtCore import pyqtSignal, Qt
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
 
@@ -81,20 +81,28 @@ class ConfigTab(QWidget):
         # Ilość obrotów obiektu
         label_rotations = QLabel("Ilość obrotów obiektu:")
         label_rotations.setStyleSheet("font-size: 12px;")
+        self.rotations_slider = QSlider(Qt.Horizontal)
+        self.rotations_slider.setMinimum(0)
+        self.rotations_slider.setMaximum(360)
+        self.rotations_slider.setTickInterval(30)  # Odstęp między znacznikami
+        form_layout.addRow(label_rotations, self.rotations_slider)
+        form_layout.addRow(QLabel(""))
 
-        self.rotations_combobox = QComboBox()
-        self.rotations_combobox.addItem("0")
-        self.rotations_combobox.addItem("1")
-        self.rotations_combobox.addItem("2")
-        self.rotations_combobox.addItem("3")
-        self.rotations_combobox.addItem("4")
-        self.rotations_combobox.addItem("5")
-        self.rotations_combobox.addItem("6")
-        self.rotations_combobox.addItem("7")
-        self.rotations_combobox.addItem("8")
-        self.rotations_combobox.setFixedWidth(100)
-        self.rotations_combobox.setStyleSheet("background-color: white;")
-        form_layout.addRow(label_rotations, self.rotations_combobox)
+        # Utwórz etykietę do wyświetlania wartości suwaka
+        self.rotations_value_label = QLabel('0')
+        self.rotations_value_label.setAlignment(Qt.AlignCenter)
+
+        # Połącz sygnał valueChanged suwaka z metodą update_rotation_label
+        self.rotations_slider.valueChanged.connect(self.update_rotation_label)
+
+        # Dodaj etykietę i suwak do układu poziomego
+        horizontal_layout = QHBoxLayout()
+        horizontal_layout.addWidget(self.rotations_value_label)
+        horizontal_layout.addWidget(self.rotations_slider)
+
+        # Dodaj etykietę dla slidera do layoutu formularza
+        form_layout.addRow(label_rotations, horizontal_layout)
+
         form_layout.addRow(QLabel(""))
 
         # Toleracja krzywizny
@@ -265,8 +273,9 @@ class ConfigTab(QWidget):
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)
         self.accuracy_lineedit.setText("0.65")
-        self.rotations_combobox.setCurrentIndex(4)
+        #self.rotations_combobox.setCurrentIndex(4)
         self.starting_point_combobox.setCurrentIndex(0)
+        self.rotations_slider.setValue(4)
 
     def submit_value(self):
         # Get the text from line edits and comboboxes
@@ -278,8 +287,9 @@ class ConfigTab(QWidget):
         parallel = self.parallel_checkbox.isChecked()
         optimization = self.optimization_combobox.currentText()
         # accuracy = float(self.accuracy_lineedit.text())
-        rotations = int(self.rotations_combobox.currentText())
+        #rotations = int(self.rotations_combobox.currentText())
         starting_point = self.starting_point_combobox.currentText()
+        rotations = self.rotations_slider.value()
 
         # Validate the input for space_between_objects
         try:
@@ -298,5 +308,9 @@ class ConfigTab(QWidget):
         # Przekazanie wszystkich wartości do funkcji update w right_part
         self.right_part.update(space_between_objects, explore_holes, parallel, optimization, accuracy, rotations, starting_point)
         QMessageBox.information(self, "Success", "Configuration updated successfully.")
+    
+    def update_rotation_label(self, value):
+        # Metoda wywoływana za każdym razem, gdy wartość suwaka się zmienia
+        self.rotations_value_label.setText(str(value))
 
 

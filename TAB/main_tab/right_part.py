@@ -16,6 +16,7 @@ import random
 from svg_to_gcode.compiler import Compiler, interfaces
 from svg_to_gcode.svg_parser import parse_file
 from pygcode import Line
+import multiprocessing
 
 
 class ToolParametersDialog(QDialog):
@@ -299,14 +300,14 @@ class RightPart(QWidget):
     def generate_rotations(self, num_rotations):
         angle_step = 2 * pi / num_rotations
         rotations = [i * angle_step for i in range(num_rotations)]
+        # Wyświetl listę obrotów w terminalu
+        rotations_text = ", ".join([f"{rot:.2f}" for rot in rotations])
+        print(f"Wygenerowane obroty: [{rotations_text}] rad")
         return rotations
 
     def display_file(self, file_paths, width, height):
-        # Access global variables
-        #global global_space_between_objects, global_explore_holes, global_parallel, global_optimization, global_accuracy, global_rotations, global_starting_point
-        # Update configuration based on user input
-        #self.check_parameters()
         variables = [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]
+        #Sprawdzenie konfiguracji
         for var in variables:
             if var is None:
                 msg = QMessageBox()
@@ -316,6 +317,7 @@ class RightPart(QWidget):
                 msg.setWindowTitle("Error")
                 msg.exec_()
                 return
+            
         self.inputPoints = []
         for file_path in file_paths:
             file_to_parse = Parser(file_path)

@@ -76,6 +76,7 @@ class ConfigTab(QWidget):
         self.starting_point_combobox.setFixedWidth(130)
         self.starting_point_combobox.setStyleSheet("background-color: white;")
         form_layout.addRow(label_starting_point, self.starting_point_combobox)
+
         form_layout.addRow(QLabel(""))
 
         # Ilość obrotów obiektu
@@ -106,35 +107,35 @@ class ConfigTab(QWidget):
         form_layout.addRow(QLabel(""))
 
         # Toleracja krzywizny
-        label_tolerance = QLabel("Toleracja krzywizny:")
-        label_tolerance.setStyleSheet("font-size: 12px;")
-        self.tolerance_lineedit = QLineEdit()
-        self.tolerance_lineedit.setFixedWidth(100)
-        self.tolerance_lineedit.setStyleSheet("background-color: white;")
-        form_layout.addRow(label_tolerance, self.tolerance_lineedit)
+        # label_tolerance = QLabel("Toleracja krzywizny:")
+        # label_tolerance.setStyleSheet("font-size: 12px;")
+        # self.tolerance_lineedit = QLineEdit()
+        # self.tolerance_lineedit.setFixedWidth(100)
+        # self.tolerance_lineedit.setStyleSheet("background-color: white;")
+        # form_layout.addRow(label_tolerance, self.tolerance_lineedit)
 
-        form_layout.addRow(QLabel(""))
+        # form_layout.addRow(QLabel(""))
 
         # Użyj przybliżenia krawędzi
-        use_edge_label = QLabel("Użyj przybliżenia krawędzi:")
-        use_edge_label.setStyleSheet("font-size: 12px;")
-        use_edge_checkbox = QCheckBox()
-        use_edge_checkbox.setCheckState(Qt.Unchecked)
-        form_layout.addRow(use_edge_label, use_edge_checkbox)
+        # use_edge_label = QLabel("Użyj przybliżenia krawędzi:")
+        # use_edge_label.setStyleSheet("font-size: 12px;")
+        # use_edge_checkbox = QCheckBox()
+        # use_edge_checkbox.setCheckState(Qt.Unchecked)
+        # form_layout.addRow(use_edge_label, use_edge_checkbox)
 
-        form_layout.addRow(QLabel(""))
+        # form_layout.addRow(QLabel(""))
 
         # Liczba rdzeni
-        label_cores = QLabel("Liczba rdzeni procesora:")
-        label_cores.setStyleSheet("font-size: 12px;")
-        cores_spinbox = QSpinBox()
-        cores_spinbox.setFixedWidth(100)
-        cores_spinbox.setStyleSheet("background-color: white;")
-        form_layout.addRow(label_cores, cores_spinbox)
+        # label_cores = QLabel("Liczba rdzeni procesora:")
+        # label_cores.setStyleSheet("font-size: 12px;")
+        # cores_spinbox = QSpinBox()
+        # cores_spinbox.setFixedWidth(100)
+        # cores_spinbox.setStyleSheet("background-color: white;")
+        # form_layout.addRow(label_cores, cores_spinbox)
 
 
-        form_layout.addRow(QLabel(""))
-        form_layout.addRow(QLabel(""))
+        # form_layout.addRow(QLabel(""))
+        # form_layout.addRow(QLabel(""))
 
         # Konfiguracja narzędzi
         label_toolsConfiguration = QLabel("<b>Konfiguracja narzędzi:<b>")
@@ -144,23 +145,24 @@ class ConfigTab(QWidget):
         form_layout.addRow(QLabel(""))
 
         # Rodzaj narzędzia
-        label_typeoftool = QLabel("Rodzaj narzędzia:")
-        label_typeoftool.setStyleSheet("font-size: 12px;")
-        self.tolerance_lineedit = QLineEdit()
-        self.tolerance_lineedit.setFixedWidth(100)
-        self.tolerance_lineedit.setStyleSheet("background-color: white;")
-        form_layout.addRow(label_typeoftool, self.tolerance_lineedit)
+        label_tool = QLabel("Rodzaj narzędzia:")
+        label_tool.setStyleSheet("font-size: 12px;")
+        self.tool_combobox = QComboBox()
+        self.tool_combobox.addItem("Laser")
+        self.tool_combobox.addItem("Plazma")
+        self.tool_combobox.addItem("Stożkowy")
+        self.tool_combobox.setFixedWidth(130)
+        self.tool_combobox.setStyleSheet("background-color: white;")
+        self.tool_combobox.currentIndexChanged.connect(self.update_space_between_objects)
+        form_layout.addRow(label_tool, self.tool_combobox)
 
         form_layout.addRow(QLabel(""))
 
-        # Scal wspólne krawędzie
-        use_mergecommonedges = QLabel("Scal wspólne krawędzie:")
-        use_mergecommonedges.setStyleSheet("font-size: 12px;")
-        use_edge_checkbox = QCheckBox()
-        use_edge_checkbox.setCheckState(Qt.Unchecked)
-        form_layout.addRow(use_mergecommonedges, use_edge_checkbox)
-
-        form_layout.addRow(QLabel(""))
+        # Checkbox to enable/disable editing
+        self.spacing_checkbox = QCheckBox("Ręczna regulacja przestrzeni")
+        self.spacing_checkbox.setChecked(False)  # Initially unchecked
+        self.spacing_checkbox.stateChanged.connect(self.toggle_spacing_editable)
+        form_layout.addRow(self.spacing_checkbox)  # Add checkbox to toggle edit mode
 
         # Przestrzeń między obiektami
         self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami:")
@@ -168,8 +170,28 @@ class ConfigTab(QWidget):
         self.space_between_objects_lineedit = QLineEdit()
         self.space_between_objects_lineedit.setFixedWidth(100)
         self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
+        self.space_between_objects_lineedit.setReadOnly(True)  # Set initially read-only
         
         form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)
+
+        # Call toggle_spacing_editable initially to set correct style
+        self.toggle_spacing_editable(self.spacing_checkbox.isChecked())
+        
+        form_layout.addRow(QLabel(""))
+
+        # Scal wspólne krawędzie
+        # use_mergecommonedges = QLabel("Scal wspólne krawędzie:")
+        # use_mergecommonedges.setStyleSheet("font-size: 12px;")
+        # use_edge_checkbox = QCheckBox()
+        # use_edge_checkbox.setCheckState(Qt.Unchecked)
+        # form_layout.addRow(use_mergecommonedges, use_edge_checkbox)
+
+        # form_layout.addRow(QLabel(""))
+
+        # Regulacja heurystyczna
+        label_hardwareConfiguration = QLabel("<b>Regulacja heurystyczna:<b>")
+        label_hardwareConfiguration.setStyleSheet("font-size: 16px;")
+        form_layout.addRow(label_hardwareConfiguration)
 
         form_layout.addRow(QLabel(""))
 
@@ -182,40 +204,6 @@ class ConfigTab(QWidget):
         self.accuracy_lineedit.setToolTip("0.0 - 1.0")
         form_layout.addRow(label_optimizationfactor, self.accuracy_lineedit)
 
-
-        form_layout.addRow(QLabel(""))
-        form_layout.addRow(QLabel(""))
-
-        
-        # Regulacja meta-heurystyczna
-        # label_metaheuristicregulation = QLabel("<b>Regulacja meta-heurystyczna:<b>")
-        # label_metaheuristicregulation.setStyleSheet("font-size: 16px;")
-        # form_layout.addRow(label_metaheuristicregulation)
-
-        # form_layout.addRow(QLabel(""))
-
-        # Populacja algorytmu genetycznego
-        # label_geneticAlgPopulation = QLabel("Populacja algorytmu genetycznego:")
-        # label_geneticAlgPopulation.setStyleSheet("font-size: 12px;")
-        # tolerance_lineedit = QLineEdit()
-        # tolerance_lineedit.setFixedWidth(100)
-        # tolerance_lineedit.setStyleSheet("background-color: white;")
-        # form_layout.addRow(label_geneticAlgPopulation, tolerance_lineedit)
-
-        # form_layout.addRow(QLabel(""))
-
-        # Wskaźnik mutacji algorytmu genetycznego
-        # label_geneticAlgMutationRate = QLabel("Wskaźnik mutacji algorytmu genetycznego:")
-        # label_geneticAlgMutationRate.setStyleSheet("font-size: 12px;")
-        # tolerance_lineedit = QLineEdit()
-        # tolerance_lineedit.setFixedWidth(100)
-        # tolerance_lineedit.setStyleSheet("background-color: white;")
-        # form_layout.addRow(label_geneticAlgMutationRate, tolerance_lineedit)
-
-        # Regulacja heurystyczna
-        label_hardwareConfiguration = QLabel("<b>Regulacja heurystyczna:<b>")
-        label_hardwareConfiguration.setStyleSheet("font-size: 16px;")
-        form_layout.addRow(label_hardwareConfiguration)
 
         form_layout.addRow(QLabel(""))
 
@@ -233,8 +221,8 @@ class ConfigTab(QWidget):
         form_layout.addRow(QLabel(""))
 
 
-        # Czy uruchomić wątki równoległe
-        label_parallel = QLabel("Czy uruchomić wątki równoległe:")
+        # Czy wykorzystac wielowatkowosc
+        label_parallel = QLabel("Wielowątkowość:")
         label_parallel.setStyleSheet("font-size: 12px;")
 
         self.parallel_checkbox = QCheckBox()
@@ -268,7 +256,7 @@ class ConfigTab(QWidget):
 
     def set_default_values(self):
         # Ustawienie wartości domyślnych dla poszczególnych elementów
-        self.space_between_objects_lineedit.setText("500")
+        self.space_between_objects_lineedit.setText("0.3")
         self.explore_holes_checkbox.setChecked(False)
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)
@@ -276,6 +264,7 @@ class ConfigTab(QWidget):
         #self.rotations_combobox.setCurrentIndex(4)
         self.starting_point_combobox.setCurrentIndex(0)
         self.rotations_slider.setValue(4)
+        self.tool_combobox.setCurrentIndex(0)
 
     def submit_value(self):
         # Get the text from line edits and comboboxes
@@ -312,5 +301,21 @@ class ConfigTab(QWidget):
     def update_rotation_label(self, value):
         # Metoda wywoływana za każdym razem, gdy wartość suwaka się zmienia
         self.rotations_value_label.setText(str(value))
+
+    def update_space_between_objects(self, index):
+        if index == 0:  # Laser
+            self.space_between_objects_lineedit.setText("0.3")
+        elif index == 1:  # Plazma
+            self.space_between_objects_lineedit.setText("4")
+        elif index == 2:  # Stożkowy
+            self.space_between_objects_lineedit.setText("20")
+    
+    def toggle_spacing_editable(self, state):
+        if state == Qt.Checked:
+            self.space_between_objects_lineedit.setReadOnly(False)
+            self.space_between_objects_lineedit.setStyleSheet("background-color: white;")  # Set editable background color
+        else:
+            self.space_between_objects_lineedit.setReadOnly(True)
+            self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")  # Set read-only background color
 
 

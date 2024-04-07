@@ -16,7 +16,7 @@ import random
 from svg_to_gcode.compiler import Compiler, interfaces
 from svg_to_gcode.svg_parser import parse_file
 from pygcode import Line
-
+from PyQt5.QtWidgets import QDialog
 
 class ToolParametersDialog(QDialog):
     def __init__(self):
@@ -25,24 +25,29 @@ class ToolParametersDialog(QDialog):
         
         self.layout = QVBoxLayout()
         
-        # Combo box to select tool
-        self.tool_label = QLabel("Wybierz narzędzie:")
-        self.tool_combobox = QComboBox()
-        self.tool_combobox.addItems(["Laserowe", "Plazmowe", "Stożkowe", "Płaskie"])
-        self.tool_combobox.currentIndexChanged.connect(self.update_tool_parameters)
-        self.layout.addWidget(self.tool_label)
-        self.layout.addWidget(self.tool_combobox)
+        # Etykieta do wyświetlania aktualnie wybranego narzędzia
+        self.selected_tool_label = QLabel("")
 
+        # Ustawienie początkowej wartości etykiety na podstawie wartości z global_saved_parameters
+        if global_saved_parameters and 'type_tool' in global_saved_parameters:
+            selected_tool = global_saved_parameters['type_tool']
+            self.selected_tool_label.setText(f"Aktualnie wybrane narzędzie: {selected_tool}")
+        else:
+            self.selected_tool_label.setText("Aktualnie nie wybrano narzędzia.")
+
+        self.layout.addWidget(self.selected_tool_label)
+
+        # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla lasera
         # LineEdits for tool parameters
-        self.movement_speed_label = QLabel("Prędkość ruchu:")
-        self.movement_speed_edit = QLineEdit()
-        self.layout.addWidget(self.movement_speed_label)
-        self.layout.addWidget(self.movement_speed_edit)
-
         self.cutting_speed_label = QLabel("Prędkość cięcia:")
         self.cutting_speed_edit = QLineEdit()
         self.layout.addWidget(self.cutting_speed_label)
         self.layout.addWidget(self.cutting_speed_edit)
+
+        self.movement_speed_label = QLabel("Prędkość ruchu:")
+        self.movement_speed_edit = QLineEdit()
+        self.layout.addWidget(self.movement_speed_label)
+        self.layout.addWidget(self.movement_speed_edit)
 
         self.depth_label = QLabel("Głębokość cięcia:")  # brak w gcodzie
         self.depth_edit = QLineEdit()
@@ -69,6 +74,30 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.footer_label)
         self.layout.addWidget(self.footer_edit)
 
+        # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla plazmy
+        self.plasma_power_label = QLabel("Plazma power:")
+        self.plasma_power_edit = QLineEdit()
+        self.layout.addWidget(self.plasma_power_label)
+        self.layout.addWidget(self.plasma_power_edit)
+
+        self.plasma_speed_label = QLabel("Plazma speed:")
+        self.plasma_speed_edit = QLineEdit()
+        self.layout.addWidget(self.plasma_speed_label)
+        self.layout.addWidget(self.plasma_speed_edit)
+
+
+        # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla stożka
+
+        self.cone_power_label = QLabel("Cone power:")
+        self.cone_power_edit = QLineEdit()
+        self.layout.addWidget(self.cone_power_label)
+        self.layout.addWidget(self.cone_power_edit)
+
+        self.cone_speed_label = QLabel("Cone speed:")
+        self.cone_speed_edit = QLineEdit()
+        self.layout.addWidget(self.cone_speed_label)
+        self.layout.addWidget(self.cone_speed_edit)
+
         # Button to confirm tool parameters
         self.confirm_button = QPushButton("Generuj")
         self.confirm_button.clicked.connect(self.accept)
@@ -79,7 +108,7 @@ class ToolParametersDialog(QDialog):
         
     def update_tool_parameters(self, index):
         # Get the current tool selection
-        current_tool = self.tool_combobox.currentText()
+        current_tool = global_saved_parameters['type_tool']
 
         # Show none parameters by default
         #self.movement_speed_label.setVisible(False)
@@ -98,27 +127,50 @@ class ToolParametersDialog(QDialog):
         #self.footer_edit.setVisible(True)
 
         # Hide parameters based on tool selection
-        if current_tool == "Laserowe":
-            self.movement_speed_label.setVisible(True)
-            self.movement_speed_edit.setVisible(True)
+        if current_tool == "laser":
             self.cutting_speed_label.setVisible(True)
             self.cutting_speed_edit.setVisible(True)
+            self.cutting_speed_edit.setText(global_saved_parameters['cutting_speed'])
+            self.movement_speed_label.setVisible(True)
+            self.movement_speed_edit.setVisible(True)
+            self.movement_speed_edit.setText(global_saved_parameters['speed_movement'])
             self.depth_label.setVisible(True)
             self.depth_edit.setVisible(True)
+            self.depth_edit.setText(global_saved_parameters['cutting_depth'])
             self.dwell_label.setVisible(True)
             self.dwell_edit.setVisible(True)
+            self.dwell_edit.setText(global_saved_parameters['downtime'])
             self.unit_label.setVisible(True)
             self.unit_edit.setVisible(True)
+            self.unit_edit.setText(global_saved_parameters['unit'])
             self.header_label.setVisible(True)
             self.header_edit.setVisible(True)
+            self.header_edit.setText(global_saved_parameters['custom_header'])
             self.footer_label.setVisible(True)
             self.footer_edit.setVisible(True)
+            self.footer_edit.setText(global_saved_parameters['custom_footer'])
+            self.plasma_power_label.setVisible(False)
+            self.plasma_power_edit.setVisible(False)
+            self.plasma_speed_label.setVisible(False)
+            self.plasma_speed_edit.setVisible(False)
+            self.cone_power_label.setVisible(False)
+            self.cone_power_edit.setVisible(False)
+            self.cone_speed_label.setVisible(False)
+            self.cone_speed_edit.setVisible(False)
 
-        elif current_tool == "Plazmowe":
-            self.movement_speed_label.setVisible(False)
-            self.movement_speed_edit.setVisible(False)
+        elif current_tool == "plazma":
+            self.plasma_power_label.setVisible(True)
+            self.plasma_power_edit.setVisible(True)
+            self.plasma_power_edit.setText(global_saved_parameters['plasma_power'])
+            self.plasma_speed_label.setVisible(True)
+            self.plasma_speed_edit.setVisible(True)
+            self.plasma_speed_edit.setText(global_saved_parameters['plasma_speed'])
+            
+
             self.cutting_speed_label.setVisible(False)
             self.cutting_speed_edit.setVisible(False)
+            self.movement_speed_label.setVisible(False)
+            self.movement_speed_edit.setVisible(False)
             self.depth_label.setVisible(False)
             self.depth_edit.setVisible(False)
             self.dwell_label.setVisible(False)
@@ -130,11 +182,25 @@ class ToolParametersDialog(QDialog):
             self.footer_label.setVisible(False)
             self.footer_edit.setVisible(False)
 
-        elif current_tool == "Stożkowe":
-            self.movement_speed_label.setVisible(False)
-            self.movement_speed_edit.setVisible(False)
+            self.cone_power_label.setVisible(False)
+            self.cone_power_edit.setVisible(False)
+            self.cone_speed_label.setVisible(False)
+            self.cone_speed_edit.setVisible(False)
+
+            
+
+        elif current_tool == "stożek":
+            self.cone_power_label.setVisible(True)
+            self.cone_power_edit.setVisible(True)
+            self.cone_power_edit.setText(global_saved_parameters['cone_power'])
+            self.cone_speed_label.setVisible(True)
+            self.cone_speed_edit.setVisible(True)
+            self.cone_speed_edit.setText(global_saved_parameters['cone_speed'])
+
             self.cutting_speed_label.setVisible(False)
             self.cutting_speed_edit.setVisible(False)
+            self.movement_speed_label.setVisible(False)
+            self.movement_speed_edit.setVisible(False)
             self.depth_label.setVisible(False)
             self.depth_edit.setVisible(False)
             self.dwell_label.setVisible(False)
@@ -146,21 +212,11 @@ class ToolParametersDialog(QDialog):
             self.footer_label.setVisible(False)
             self.footer_edit.setVisible(False)
 
-        elif current_tool == "Płaskie":
-            self.movement_speed_label.setVisible(False)
-            self.movement_speed_edit.setVisible(False)
-            self.cutting_speed_label.setVisible(False)
-            self.cutting_speed_edit.setVisible(False)
-            self.depth_label.setVisible(False)
-            self.depth_edit.setVisible(False)
-            self.dwell_label.setVisible(False)
-            self.dwell_edit.setVisible(False)
-            self.unit_label.setVisible(False)
-            self.unit_edit.setVisible(False)
-            self.header_label.setVisible(False)
-            self.header_edit.setVisible(False)
-            self.footer_label.setVisible(False)
-            self.footer_edit.setVisible(False)
+            self.plasma_power_label.setVisible(False)
+            self.plasma_power_edit.setVisible(False)
+            self.plasma_speed_label.setVisible(False)
+            self.plasma_speed_edit.setVisible(False)
+
 
 
 # Declare global variables
@@ -205,19 +261,35 @@ class RightPart(QWidget):
 
         # Button to open tool parameters dialog
         self.open_tool_parameters_button = QPushButton("Generuj G-code")
-        self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog)
+        self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog_right)
         layout.addWidget(self.open_tool_parameters_button)
 
         self.setLayout(layout)
         self.inputPoints = []
         self.volume = None  # Move initialization to display_file method
 
-    def open_tool_parameters_dialog(self):
+
+    # metoda przyjmująca parametry narzędzia wybrane podczas konifguracji nestingu 
+    def sended_tool_param(self, saved_parameters):
+        
+        # Deklaracja zmiennej globalnej
+        global global_saved_parameters
+        
+        # Przypisanie wartości zmiennej globalnej
+        global_saved_parameters = saved_parameters
+        
+
+
+    def open_tool_parameters_dialog_right(self):
+        
+    
         dialog = ToolParametersDialog()
+
+
         if dialog.exec_():
             # Get user-defined tool parameters
-            movement_speed = float(dialog.movement_speed_edit.text())
             cutting_speed = float(dialog.cutting_speed_edit.text())
+            movement_speed = float(dialog.movement_speed_edit.text())
             depth = float(dialog.depth_edit.text())
             dwell_time = float(dialog.dwell_edit.text())
             unit = dialog.unit_edit.text()
@@ -226,9 +298,9 @@ class RightPart(QWidget):
 
             # Generate G-code from SVG
             gcode_compiler = Compiler(
-                interfaces.Gcode,
-                movement_speed=movement_speed,
+                interfaces.Gcode,   
                 cutting_speed=cutting_speed,  # Ustawienie prędkości cięcia
+                movement_speed=movement_speed,
                 pass_depth=depth,  # Ustawienie głębokości cięcia
                 dwell_time=dwell_time,  # Ustawienie czasu przestoju
                 unit=unit,  # Ustawienie jednostki
@@ -261,6 +333,10 @@ class RightPart(QWidget):
 
     def initUI(self):
         pass
+
+
+    
+
 
     def update(self, space_between_objects, explore_holes, parallel, optimization, accuracy, rotations, starting_point):
         global global_space_between_objects, global_explore_holes, global_parallel, global_optimization, global_accuracy, global_rotations, global_starting_point
@@ -420,5 +496,5 @@ class RightPart(QWidget):
 
     def generate_gcode(self):
         # Open the tool parameters dialog
-        self.open_tool_parameters_dialog()
+        self.open_tool_parameters_dialog_right()
 

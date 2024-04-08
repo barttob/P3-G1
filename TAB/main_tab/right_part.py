@@ -381,7 +381,7 @@ class RightPart(QWidget):
         print(f"Wygenerowane obroty: [{rotations_text}] rad")
         return rotations
 
-    def display_file(self, file_paths, width, height):
+    def display_file(self, file_paths, width, height, checked_paths):
         variables = [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]
         #Sprawdzenie konfiguracji
         for var in variables:
@@ -395,9 +395,10 @@ class RightPart(QWidget):
                 return
             
         self.inputPoints = []
-        for file_path in file_paths:
-            file_to_parse = Parser(file_path)
-            self.inputPoints += file_to_parse.parse_svg()
+        # for path in checked_paths:
+        #     print(path)
+        file_to_parse = Parser(checked_paths)
+        self.inputPoints += file_to_parse.parse_svg()
 
         self.volume = Box(width, height)
         # Parametry nestingu
@@ -446,6 +447,16 @@ class RightPart(QWidget):
 
         num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
         
+        for i in range(len(self.inputPoints)):
+            print()
+        #     print(i)
+        #     print(self.inputPoints[i].isFixed())
+        #     print(self.inputPoints[i].holeCount())
+        #     print(self.inputPoints[i].isContourConvex())
+        #     print(self.inputPoints[i].areHolesConvex())
+        #     print(self.inputPoints[i].holeCount())
+        #     print(self.inputPoints[i].boundingBox())
+            # print(self.inputPoints[i].area())
 
         #fig = Figure(figsize=(8, 8))
         #ax = fig.add_subplot(111)

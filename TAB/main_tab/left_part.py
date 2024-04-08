@@ -120,6 +120,16 @@ class LeftPart(QWidget):
             elif file_path.lower().endswith('.dwg'):
                 self.convert_and_display_dwg(file_path)
 
+    def read_and_display_dxf(self, file_path):
+        try:
+            file_to_convert = Parser(file_path)
+            self.file_path_send.pop()
+            converted_file_path = file_to_convert.dxf_to_svg()
+            self.analize_svg(converted_file_path)
+            self.file_path_send.append(converted_file_path)
+        except Exception as e:
+            print("Błąd odczytu pliku DXF:", e)
+
     def analize_svg(self, file_path_or_root):
             try:
                 if isinstance(file_path_or_root, str):
@@ -179,7 +189,9 @@ class LeftPart(QWidget):
             self.table.setItem(row_position, 1, QTableWidgetItem('SVG Group'))
 
             # Wstawienie danych (ścieżki) do trzeciej kolumny - pusty string, bo to cała grupa
-            self.table.setItem(row_position, 2, QTableWidgetItem(''))
+            # print(' '.join(ET.tostring(path, encoding='unicode') for path in group))
+            path_data = ' '.join(ET.tostring(path, encoding='unicode') for path in group)
+            self.table.setItem(row_position, 2, QTableWidgetItem(path_data))
 
             # Dodanie checkboxa do zaznaczania wiersza
             checkbox_item = QCheckBox()
@@ -252,7 +264,8 @@ class LeftPart(QWidget):
                     self.table.setItem(row_position, 1, QTableWidgetItem('SVG Path'))
 
                     # Wstawienie danych (ścieżki) do trzeciej kolumny
-                    path_data = ' '.join(path.attrib['d'] for path in group)
+                    # print(' '.join(ET.tostring(path, encoding='unicode') for path in group))
+                    path_data = ' '.join(ET.tostring(path, encoding='unicode') for path in group)
                     self.table.setItem(row_position, 2, QTableWidgetItem(path_data))
 
                     # Dodanie checkboxa do zaznaczania wiersza
@@ -264,6 +277,22 @@ class LeftPart(QWidget):
 
             except Exception as e:
                 print("Błąd odczytu pliku SVG:", e)
+
+
+    def get_checked_paths(self):
+        checked_paths = []
+        
+        # Iterating through rows of the table
+        for row in range(self.table.rowCount()):
+            # Getting the checkbox widget from the cell
+            checkbox_widget = self.table.cellWidget(row, 3)
+            # Checking if the checkbox is checked
+            if checkbox_widget.isChecked():
+                # Retrieving the path_data associated with the checked row
+                path_data = self.table.item(row, 2).text()
+                checked_paths.append(path_data)
+        
+        return checked_paths
 
 
     def create_svg_figure(self, paths):
@@ -535,6 +564,7 @@ class LeftPart(QWidget):
     def display_selected_file(self):
         width_text = self.width_input.text()
         height_text = self.height_input.text()
+        checked_paths = self.get_checked_paths()
 
         # Sprawdzenie, czy pola szerokości i wysokości są puste
         if not width_text.strip() and not height_text.strip():
@@ -548,7 +578,7 @@ class LeftPart(QWidget):
                 # Dodatkowa walidacja: Sprawdzamy, czy szerokość i wysokość są większe niż zero
                 if width > 0 and height > 0:
                     # Wywołanie metody wyświetlającej pliki, ponieważ pola są poprawnie uzupełnione
-                    self.right_part.display_file(self.file_path_send, width, height)
+                    self.right_part.display_file(self.file_path_send, width, height, checked_paths)
                 else:
                     QMessageBox.warning(self, "Błąd", "Szerokość i wysokość muszą być większe od zera.")
             else:

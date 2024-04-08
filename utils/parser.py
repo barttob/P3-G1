@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from svg.path import parse_path, Line, CubicBezier, QuadraticBezier, Arc
+from svg.path import parse_path, Line, CubicBezier, QuadraticBezier, Arc, Close, Move
 from pynest2d import *
 import ezdxf
 from ezdxf.addons.drawing import Frontend, RenderContext, layout, svg
@@ -8,68 +8,143 @@ import os
 import uuid
 import re
 
+import matplotlib.pyplot as plt
+
 
 class Parser():
     def __init__(self, file_path):
         super().__init__()
         self.inputPoints = []
+        self.svg_paths = file_path
         self.file_label = file_path
         self.svg_to_mm = 0.352777778
 
     def parse_svg(self):
-        doc = minidom.parse(self.file_label)
-        path_strings = [path.getAttribute('d') for path in doc.getElementsByTagName('path')]
-        rect_strings = [rect for rect in doc.getElementsByTagName('rect')]
-        polygon_strings = [polygon.getAttribute('points') for polygon in doc.getElementsByTagName('polygon')]
-
+        self.poinrts = []
+        path_strings = []
+        for path in self.svg_paths:
+            occurrences = re.findall("path", path)
+            if len(occurrences) > 1:
+                path_strings.append(path)
+            else:
+                path_strings.append(self.extract_d_attribute(path))
+            
+        
+        #  rect_strings = [rect for rect in doc.getElementsByTagName('rect')]
+        # polygon_strings = [polygon.getAttribute('points') for polygon in doc.getElementsByTagName('polygon')]
         for path_str in path_strings:
-            path = parse_path(path_str)
-            self.svg_parse_points = []
-            self.extract_points_from_path(path)
-            item = Item(self.svg_parse_points)
-            self.inputPoints.append(item)
+            occurrences = re.findall("path", path_str)
+            if len(occurrences) > 1:
+                splitted_svg_path = path_str.split("\n")
+                splitted_path_strings = self.extract_multi_d_attribute(splitted_svg_path)
+                self.svg_parse_points = []
+                for splitted_str in splitted_path_strings:
+                    path = parse_path(splitted_str)
+                    self.extract_points_from_path(path)
+                item = Item(self.svg_parse_points)
+                self.inputPoints.append(item)
+            else:
+                path = parse_path(path_str)
+                self.svg_parse_points = []
+                self.extract_points_from_path(path)
+                item = Item(self.svg_parse_points)
+                self.inputPoints.append(item)
 
-        for rect in rect_strings:
-            x = float(rect.getAttribute('x')) * self.svg_to_mm
-            y = float(rect.getAttribute('y')) * self.svg_to_mm
-            width = float(rect.getAttribute('width')) * self.svg_to_mm
-            height = float(rect.getAttribute('height')) * self.svg_to_mm
-            points = [Point(int(x * 100), int(y * 100)),
-                    Point(int((x + width) * 100), int(y * 100)),
-                    Point(int((x + width) * 100), int((y + height) * 100)),
-                    Point(int(x * 100), int((y + height) * 100))]
-            self.inputPoints.append(Item(points))
+        # Sample list of points (x, y)
+        x_values = []
+        y_values = []
+        # Extract x and y coordinates from the list of points
+        x_values = [point[0] for point in self.poinrts]
+        y_values = [point[1] for point in self.poinrts]
 
-        for polygon_str in polygon_strings:
-            poly_str = polygon_str.split()
-            numbers = [float(num_str) for item in poly_str for num_str in item.split(',')]
-            poly_str = numbers
-            points = []
-            for i in range(0, len(poly_str) - 1, 2):
-                points.append(Point(int(float(poly_str[i]) * self.svg_to_mm * 100), int(float(poly_str[i + 1]) * self.svg_to_mm * 100)))
-            self.inputPoints.append(Item(points))
+        # Plotting the points
+        plt.plot(x_values, y_values, marker='o', linestyle='-')
+
+        # Adding title and labels
+        plt.title('Plot from List of Points')
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+
+        # Displaying the plot
+        plt.grid(True)
+        # plt.show()
+
+        # for rect in rect_strings:
+        #     x = float(rect.getAttribute('x')) * self.svg_to_mm
+        #     y = float(rect.getAttribute('y')) * self.svg_to_mm
+        #     width = float(rect.getAttribute('width')) * self.svg_to_mm
+        #     height = float(rect.getAttribute('height')) * self.svg_to_mm
+        #     points = [Point(int(x * 100), int(y * 100)),
+        #             Point(int((x + width) * 100), int(y * 100)),
+        #             Point(int((x + width) * 100), int((y + height) * 100)),
+        #             Point(int(x * 100), int((y + height) * 100))]
+        #     self.inputPoints.append(Item(points))
+
+        # for polygon_str in polygon_strings:
+        #     poly_str = polygon_str.split()
+        #     numbers = [float(num_str) for item in poly_str for num_str in item.split(',')]
+        #     poly_str = numbers
+        #     points = []
+        #     for i in range(0, len(poly_str) - 1, 2):
+        #         points.append(Point(int(float(poly_str[i]) * self.svg_to_mm * 100), int(float(poly_str[i + 1]) * self.svg_to_mm * 100)))
+        #     self.inputPoints.append(Item(points))
 
         return self.inputPoints
+    
+
+    def extract_d_attribute(self, path_string):
+        # Assuming the input path_string is in the format provided
+        start_index = path_string.find('d="') + 3
+        end_index = path_string.find('"', start_index)
+        return path_string[start_index:end_index]
+    
+    def extract_multi_d_attribute(self, svg_paths):
+        d_tags = []
+        for path in svg_paths:
+            match = re.search(r'd="(.*?)"', path)
+            if match:
+                d_tags.append(match.group(1))
+        return d_tags
 
     
     def extract_points_from_path(self, path):
+        i = 0
         for segment in path:
-                if isinstance(segment, Line):
-                    self.points_on_line(segment)
-                elif isinstance(segment, CubicBezier):
-                    self.points_on_cubic_bezier(segment)
-                elif isinstance(segment, QuadraticBezier):
-                    self.points_on_quadratic_bezier(segment)
-                elif isinstance(segment, Arc):
-                    self.points_on_arc(segment)
+            # print(segment)
+            if isinstance(segment, Line):
+                self.points_on_line(segment)
+            elif isinstance(segment, CubicBezier):
+                self.points_on_cubic_bezier(segment)
+            elif isinstance(segment, QuadraticBezier):
+                self.points_on_quadratic_bezier(segment)
+            elif isinstance(segment, Arc):
+                self.points_on_arc(segment)
+            elif isinstance(segment, Close):
+                print((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)) == self.first)
+                self.svg_parse_points.append(Point(self.first[0], self.first[1]))
+                # self.svg_parse_points.append(Point(int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
+                self.poinrts.append(self.first)
+                # self.poinrts.append((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
+            elif isinstance(segment, Move):
+                if i > 0:
+                    break
+                else:
+                    self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
+                    # self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
+                # self.svg_parse_points.append(Point(int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
+            i+=1
 
     def points_on_line(self, line):
         self.svg_parse_points.append(Point(int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
+        self.svg_parse_points.append(Point(int(line.end.real * self.svg_to_mm * 100), int(line.end.imag * self.svg_to_mm * 100)))
+        self.poinrts.append((int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
 
     def points_on_cubic_bezier(self, bezier):
         for t in range(0, 101, 5):  # Sample 20 points on the curve
             point = bezier.point(t / 100)
-            self.svg_parse_points.append(Point(int(point.real * self.svg_to_mm * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
+            # print(point)
+            self.svg_parse_points.append(Point(int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
+            self.poinrts.append((int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
 
     def points_on_quadratic_bezier(self, bezier):
         for t in range(0, 101, 5):  # Sample 20 points on the curve
@@ -82,6 +157,41 @@ class Parser():
             self.svg_parse_points.append(Point(int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
 
 
+
+    def ungroup_and_apply_transform(self, svg_string, scale):
+            root = ET.fromstring(svg_string)
+
+            # Find all groups in the SVG
+            groups = root.findall('.//{http://www.w3.org/2000/svg}g')
+
+            for group in groups:
+                # Retrieve group transformation attributes
+                transform_attr = group.get('transform')
+                if transform_attr:
+                    # Apply group transformation to all child elements
+                    for child in group:
+                        child_transform = child.get('transform')
+                        if child_transform:
+                            # Combine group transformation with child transformation
+                            combined_transform = transform_attr + ' ' + child_transform
+                            child.set('transform', combined_transform)
+                        else:
+                            child.set('transform', transform_attr)
+
+                    # Remove the group element
+                    group.getparent().remove(group)
+
+            # Scale all paths in the SVG
+            paths = root.findall('.//{http://www.w3.org/2000/svg}path')
+            for path in paths:
+                d = path.get('d')
+                new_d = self.scale_path(d, scale)
+                path.set('d', new_d)
+
+            root = self.remove_namespace(root)
+            modified_svg_string = ET.tostring(root, encoding='utf-8').decode('utf-8')
+
+            return modified_svg_string
 
 
     
@@ -114,6 +224,8 @@ class Parser():
             if '}' in elem.tag:
                 elem.tag = elem.tag.split('}', 1)[1]
         return tree
+    
+    
 
     def remove_first_rect_and_ungroup(self, svg_string, scale):
         root = ET.fromstring(svg_string)

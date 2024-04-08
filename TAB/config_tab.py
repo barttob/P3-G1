@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QSlider
-=======
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QDialogButtonBox, QDialog
->>>>>>> g_code_parameters_extension
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QDialogButtonBox, QDialog, QSlider
 from PyQt5.QtCore import pyqtSignal, Qt
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
 
@@ -163,17 +159,14 @@ class ConfigTab(QWidget):
 
         form_layout.addRow(QLabel(""))
 
+        
         # Rodzaj narzędzia
-        label_tool = QLabel("Rodzaj narzędzia:")
-        label_tool.setStyleSheet("font-size: 12px;")
-        self.tool_combobox = QComboBox()
-        self.tool_combobox.addItem("Laser")
-        self.tool_combobox.addItem("Plazma")
-        self.tool_combobox.addItem("Stożkowy")
-        self.tool_combobox.setFixedWidth(130)
-        self.tool_combobox.setStyleSheet("background-color: white;")
-        self.tool_combobox.currentIndexChanged.connect(self.update_space_between_objects)
-        form_layout.addRow(label_tool, self.tool_combobox)
+        label_typeoftool = QLabel("Rodzaj narzędzia:")
+        label_typeoftool.setStyleSheet("font-size: 12px;")
+        self.tolerance_lineedit = QLineEdit()
+        self.tolerance_lineedit.setFixedWidth(100)
+        self.tolerance_lineedit.setStyleSheet("background-color: white;")
+        form_layout.addRow(label_typeoftool, self.tolerance_lineedit)
 
         form_layout.addRow(QLabel(""))
 
@@ -380,6 +373,30 @@ class ConfigTab(QWidget):
             self.tool_parameters['stożek']['cone_power'].setText("123")
             self.tool_parameters['stożek']['cone_speed'].setText("23")
 
+    
+
+
+
+        # Przekazanie parametrów do right part
+        #self.right_part.sended_tool_param(self.saved_parameters)
+
+
+
+      
+
+
+
+
+
+
+    ###############################################################################
+
+
+    
+
+
+    
+
     def save_parameters(self):
         tool = self.tool_combobox.currentText()
         current_tool_params = self.tool_parameters.get(tool)
@@ -449,7 +466,7 @@ class ConfigTab(QWidget):
         space_between_objects_text = self.space_between_objects_lineedit.text()
         accuracy_text = self.accuracy_lineedit.text()
 
-<<<<<<< HEAD
+
         # space_between_objects = float(self.space_between_objects_lineedit.text())
         explore_holes = self.explore_holes_checkbox.isChecked()
         parallel = self.parallel_checkbox.isChecked()
@@ -459,8 +476,6 @@ class ConfigTab(QWidget):
         starting_point = self.starting_point_combobox.currentText()
         rotations = self.rotations_slider.value()
 
-=======
->>>>>>> g_code_parameters_extension
         # Validate the input for space_between_objects
         try:
             space_between_objects = float(space_between_objects_text)
@@ -474,14 +489,6 @@ class ConfigTab(QWidget):
         except ValueError:
             QMessageBox.warning(self, "Input Error", "Accuracy must be a valid number.")
             return
-
-        # space_between_objects = float(self.space_between_objects_lineedit.text())
-        explore_holes = self.explore_holes_checkbox.isChecked()
-        parallel = self.parallel_checkbox.isChecked()
-        optimization = self.optimization_combobox.currentText()
-        # accuracy = float(self.accuracy_lineedit.text())
-        rotations = int(self.rotations_combobox.currentText())
-        starting_point = self.starting_point_combobox.currentText()
 
         # Przekazanie wszystkich wartości do funkcji update w right_part
         self.right_part.update(space_between_objects, explore_holes, parallel, optimization, accuracy, rotations, starting_point)
@@ -510,6 +517,7 @@ class ConfigTab(QWidget):
         else:
             self.space_between_objects_lineedit.setReadOnly(True)
             self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")  # Set read-only background color
+
 
 
 

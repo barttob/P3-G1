@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QSlider
+=======
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QDialogButtonBox, QDialog
+>>>>>>> g_code_parameters_extension
 from PyQt5.QtCore import pyqtSignal, Qt
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
 
@@ -8,13 +12,28 @@ class ConfigTab(QWidget):
         super().__init__()
         self.right_part = right_part
         main_layout = QHBoxLayout()
-        self.setLayout(main_layout)        
+        self.setLayout(main_layout)     
+        self.tool_parameters = {}   
 
         # Lewa połowa 
         left_half = QWidget(self)
         left_half.setStyleSheet("background-color: rgb(142, 191, 250);")
         left_layout = QVBoxLayout(left_half)
         main_layout.addWidget(left_half, stretch=20)
+
+
+        # Combo box to select tool
+        self.tool_label = QLabel("Wybierz narzędzie:")
+        self.tool_combobox = QComboBox()
+        self.tool_combobox.addItems(["laser", "plazma", "stożek"])
+        left_layout.addWidget(self.tool_label)
+        left_layout.addWidget(self.tool_combobox)
+
+
+        # Button to open tool parameters dialog
+        self.open_tool_parameters_button = QPushButton("Otwórz parametry narzędzia")
+        self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog)
+        left_layout.addWidget(self.open_tool_parameters_button)
 
         # QFormLayout dla równego ułożenia pól
         form_layout = QFormLayout()
@@ -266,11 +285,171 @@ class ConfigTab(QWidget):
         self.rotations_slider.setValue(4)
         self.tool_combobox.setCurrentIndex(0)
 
+
+    def open_tool_parameters_dialog(self):
+        tool = self.tool_combobox.currentText()
+        self.dialog = QDialog()  # Tworzenie okna dialogowego i przypisanie do atrybutu self.dialog
+
+        form_layout = QFormLayout(self.dialog)  # Użyj self.dialog zamiast dialog
+
+        if tool == "laser":
+            # Tworzymy lub aktualizujemy słownik parametrów dla lasera
+            self.tool_parameters['laser'] = {
+                'type_tool': tool,  # Dodaj pole type_tool
+                'cutting_speed': QLineEdit(),
+                'speed_movement': QLineEdit(),
+                'cutting_depth': QLineEdit(),
+                'downtime': QLineEdit(),
+                'unit': QComboBox(),  # Dodaj QComboBox
+                'custom_header': QLineEdit(),
+                'custom_footer': QLineEdit()
+            }
+            
+            # Dodaj elementy do QComboBox
+            self.tool_parameters['laser']['unit'].addItems(["mm", "cale"])  # Dodaj elementy do QComboBox
+
+            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['laser']['cutting_speed'])
+            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['laser']['speed_movement'])
+            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['laser']['cutting_depth'])
+            form_layout.addRow("Czas przestoju:", self.tool_parameters['laser']['downtime'])
+            form_layout.addRow("Jednostka:", self.tool_parameters['laser']['unit'])
+            form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['laser']['custom_header'])
+            form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['laser']['custom_footer'])
+
+            # Set default values for all parameters
+            default_button = QPushButton("Ustaw domyślne")
+            default_button.clicked.connect(lambda: self.set_default_values_for_tools('laser'))
+            form_layout.addRow(default_button)
+        elif tool == "plazma":
+            # Podobnie jak dla lasera, tworzymy lub aktualizujemy słownik parametrów dla plazmy
+            self.tool_parameters['plazma'] = {
+                'type_tool': tool,  # Dodaj pole type_tool
+                'plasma_power': QLineEdit(),
+                'plasma_speed': QLineEdit()
+            }
+
+            form_layout.addRow("Moc plazmy:", self.tool_parameters['plazma']['plasma_power'])
+            form_layout.addRow("Prędkość plazmy:", self.tool_parameters['plazma']['plasma_speed'])
+
+            # Set default values for all parameters
+            default_button = QPushButton("Ustaw domyślne")
+            default_button.clicked.connect(lambda: self.set_default_values_for_tools('plazma'))
+            form_layout.addRow(default_button)
+        elif tool == "stożek":
+            # Analogicznie dla stożka
+            self.tool_parameters['stożek'] = {
+                'type_tool': tool,  # Dodaj pole type_tool
+                'cone_power': QLineEdit(),
+                'cone_speed': QLineEdit()
+            }
+
+            form_layout.addRow("Moc stożka:", self.tool_parameters['stożek']['cone_power'])
+            form_layout.addRow("Prędkość stożka:", self.tool_parameters['stożek']['cone_speed'])
+
+            # Set default values for all parameters
+            default_button = QPushButton("Ustaw domyślne")
+            default_button.clicked.connect(lambda: self.set_default_values_for_tools('stożek'))
+            form_layout.addRow(default_button)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.save_parameters)
+        button_box.rejected.connect(self.dialog.reject)
+
+        form_layout.addRow(button_box)
+
+        if self.dialog.exec_():
+            # Do something with the parameters entered in the dialog
+            pass
+
+
+
+    def set_default_values_for_tools(self, tool):
+        # Tutaj ustawiamy domyślne wartości dla danego narzędzia
+        if tool == "laser":
+            self.tool_parameters['laser']['cutting_speed'].setText("103")
+            self.tool_parameters['laser']['speed_movement'].setText("10")
+            self.tool_parameters['laser']['cutting_depth'].setText("12")
+            self.tool_parameters['laser']['downtime'].setText("29")
+            self.tool_parameters['laser']['unit'].setCurrentIndex(0)
+            self.tool_parameters['laser']['custom_header'].setText("M10")
+            self.tool_parameters['laser']['custom_footer'].setText("M24")
+        elif tool == "plazma":
+            self.tool_parameters['plazma']['plasma_power'].setText("34")
+            self.tool_parameters['plazma']['plasma_speed'].setText("25")
+        elif tool == "stożek":
+            self.tool_parameters['stożek']['cone_power'].setText("123")
+            self.tool_parameters['stożek']['cone_speed'].setText("23")
+
+    def save_parameters(self):
+        tool = self.tool_combobox.currentText()
+        current_tool_params = self.tool_parameters.get(tool)
+        
+        if current_tool_params:
+            # Zapisz parametry dla aktualnie wybranego narzędzia
+            saved_params = {'type_tool': tool}  # Utwórz słownik dla zapisanych parametrów, włączając typ narzędzia
+            for param_name, param_widget in current_tool_params.items():
+                if isinstance(param_widget, QLineEdit):
+                    saved_params[param_name] = param_widget.text()
+                elif isinstance(param_widget, QComboBox):
+                    saved_params[param_name] = param_widget.currentText()
+
+            self.saved_parameters = saved_params
+            print("Zapisane parametry:", self.saved_parameters)  # Wyświetlenie zapisanych parametrów w konsoli
+
+            # Utwórz listę narzędzi do usunięcia
+            tools_to_remove = []
+            for other_tool in list(self.tool_parameters.keys()):  # Utwórz kopię kluczy słownika przed iteracją
+                if other_tool != tool:
+                    # Dodaj narzędzie do listy narzędzi do usunięcia
+                    tools_to_remove.append(other_tool)
+            
+            # Iteruj po liście narzędzi do usunięcia i usuń je ze słownika
+            for tool_to_remove in tools_to_remove:
+                self.tool_parameters.pop(tool_to_remove)
+
+        # Wyświetl kolejne okno dialogowe z zawartością słownika
+        self.display_dictionary_dialog(self.saved_parameters)
+
+    def display_dictionary_dialog(self, saved_params):
+        # Utwórz nowe okno dialogowe
+        dictionary_dialog = QDialog()
+        layout = QFormLayout(dictionary_dialog)
+
+        # Wyświetl zawartość słownika
+        for key, value in saved_params.items():
+            label = QLabel(key)
+            field = QLabel(str(value))
+            layout.addRow(label, field)
+
+        dictionary_dialog.exec_()
+
+
+
+        # Przekazanie parametrów do right part
+        #self.right_part.sended_tool_param(self.saved_parameters)
+
+
+
+      
+
+
+
+
+
+
+    ###############################################################################
+
     def submit_value(self):
+        # Sprawdź, czy saved_parameters nie jest puste
+        if not hasattr(self, 'saved_parameters') or not self.saved_parameters:
+            QMessageBox.information(self, "Błąd", "Uzupełnij parametry narzędzia.")
+            return
+
         # Get the text from line edits and comboboxes
         space_between_objects_text = self.space_between_objects_lineedit.text()
         accuracy_text = self.accuracy_lineedit.text()
 
+<<<<<<< HEAD
         # space_between_objects = float(self.space_between_objects_lineedit.text())
         explore_holes = self.explore_holes_checkbox.isChecked()
         parallel = self.parallel_checkbox.isChecked()
@@ -280,6 +459,8 @@ class ConfigTab(QWidget):
         starting_point = self.starting_point_combobox.currentText()
         rotations = self.rotations_slider.value()
 
+=======
+>>>>>>> g_code_parameters_extension
         # Validate the input for space_between_objects
         try:
             space_between_objects = float(space_between_objects_text)
@@ -293,9 +474,21 @@ class ConfigTab(QWidget):
         except ValueError:
             QMessageBox.warning(self, "Input Error", "Accuracy must be a valid number.")
             return
-        
+
+        # space_between_objects = float(self.space_between_objects_lineedit.text())
+        explore_holes = self.explore_holes_checkbox.isChecked()
+        parallel = self.parallel_checkbox.isChecked()
+        optimization = self.optimization_combobox.currentText()
+        # accuracy = float(self.accuracy_lineedit.text())
+        rotations = int(self.rotations_combobox.currentText())
+        starting_point = self.starting_point_combobox.currentText()
+
         # Przekazanie wszystkich wartości do funkcji update w right_part
         self.right_part.update(space_between_objects, explore_holes, parallel, optimization, accuracy, rotations, starting_point)
+
+        # Przekazanie parametrów ustawień narzędzia do right part do funkcji
+        self.right_part.sended_tool_param(self.saved_parameters)
+
         QMessageBox.information(self, "Success", "Configuration updated successfully.")
     
     def update_rotation_label(self, value):
@@ -317,5 +510,6 @@ class ConfigTab(QWidget):
         else:
             self.space_between_objects_lineedit.setReadOnly(True)
             self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")  # Set read-only background color
+
 
 

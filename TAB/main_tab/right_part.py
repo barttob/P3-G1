@@ -1,7 +1,7 @@
 
 from PyQt5.QtGui import QImage, QPixmap, QPainter
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGraphicsView, QGraphicsScene, QSizePolicy, QPushButton, QFileDialog, \
-    QLabel, QLineEdit, QComboBox, QDialog, QDialogButtonBox, QMessageBox
+    QLabel, QLineEdit, QComboBox, QDialog, QDialogButtonBox, QMessageBox, QTextEdit
 from PyQt5.QtCore import Qt
 import random
 import os
@@ -235,6 +235,58 @@ class CombinedConfig:
         self.nfp_config = nfp_config
         self.bottom_left_config = bottom_left_config
 
+
+class CustomDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Generated G-code")
+        self.setGeometry(100, 100, 800, 600)
+
+        layout = QVBoxLayout()
+
+        self.text_edit = QTextEdit()
+        layout.addWidget(self.text_edit)
+
+        simulate_button = QPushButton("Symuluj")
+        layout.addWidget(simulate_button)
+        simulate_button.clicked.connect(self.simulate_clicked)
+
+        save_button = QPushButton("Zapisz")
+        layout.addWidget(save_button)
+        save_button.clicked.connect(self.save_clicked)
+
+        self.setLayout(layout)
+
+    def set_generated_gcode(self, generated_gcode):
+        self.generated_gcode = generated_gcode
+        self.text_edit.setText(generated_gcode)
+
+    def simulate_clicked(self):
+        # Tutaj możesz dodać logikę dla przycisku "Symuluj"
+        pass
+
+    def save_clicked(self):
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.AnyFile)
+        file_dialog.setAcceptMode(QFileDialog.AcceptSave)
+        file_dialog.setNameFilter("G-code files (*.gcode)")
+
+        if file_dialog.exec_():
+            gcode_filename = file_dialog.selectedFiles()[0]
+
+            # Sprawdź, czy rozszerzenie ".gcode" jest dodane
+            if not gcode_filename.endswith(".gcode"):
+                gcode_filename += ".gcode"
+
+            with open(gcode_filename, 'w') as file:
+                file.write(self.generated_gcode)
+
+            print(f"G-code file saved as: {os.path.abspath(gcode_filename)}")
+        else:
+            print("Canceled saving the G-code file")
+
+
 class RightPart(QWidget):
 
     def __init__(self):
@@ -282,13 +334,14 @@ class RightPart(QWidget):
 
 
     def open_tool_parameters_dialog_right(self):
-        
-    
         dialog = ToolParametersDialog()
 
-
         if dialog.exec_():
-            # Get user-defined tool parameters
+            # Tworzenie i konfiguracja okna dialogowego
+            custom_dialog = CustomDialog()
+            custom_dialog.setModal(True)
+
+            # Pobierz parametry narzędzia od użytkownika
             cutting_speed = float(dialog.cutting_speed_edit.text())
             movement_speed = float(dialog.movement_speed_edit.text())
             depth = float(dialog.depth_edit.text())
@@ -297,40 +350,34 @@ class RightPart(QWidget):
             custom_header = [dialog.header_edit.text()]
             custom_footer = [dialog.footer_edit.text()]
 
-            # Generate G-code from SVG
+            # Wygeneruj G-kod z pliku SVG
             gcode_compiler = Compiler(
                 interfaces.Gcode,   
-                cutting_speed=cutting_speed,  # Ustawienie prędkości cięcia
+                cutting_speed=cutting_speed,
                 movement_speed=movement_speed,
-                pass_depth=depth,  # Ustawienie głębokości cięcia
-                dwell_time=dwell_time,  # Ustawienie czasu przestoju
-                unit=unit,  # Ustawienie jednostki
-                custom_header=custom_header,  # Ustawienie niestandardowego nagłówka
-                custom_footer=custom_footer  # Ustawienie niestandardowej stopki
+                pass_depth=depth,
+                dwell_time=dwell_time,
+                unit=unit,
+                custom_header=custom_header,
+                custom_footer=custom_footer
             )
 
-            curves = parse_file("output.svg")  # Using previously saved SVG file
+            curves = parse_file("output.svg")
             gcode_compiler.append_curves(curves)
 
-            # Get the file location for saving G-code
-            file_dialog = QFileDialog()
-            file_dialog.setFileMode(QFileDialog.AnyFile)
-            file_dialog.setAcceptMode(QFileDialog.AcceptSave)
-            file_dialog.setNameFilter("G-code files (*.gcode)")
-            if file_dialog.exec_():
-                gcode_filename = file_dialog.selectedFiles()[0]
+            # Odczytaj wygenerowany G-kod
+            generated_gcode = gcode_compiler.compile()
 
-                # Save the G-code to the final file
-                gcode_compiler.compile_to_file(gcode_filename)
+            # Ustaw wygenerowany G-kod w oknie dialogowym
+            custom_dialog.set_generated_gcode(generated_gcode)
 
-                # Inform the user about the saved G-code file
-                print(f"G-code file saved as: {os.path.abspath(gcode_filename)}")
-                return
+            custom_dialog.exec_()
 
-            print("Canceled saving the G-code file")
-            return
+            print("Canceled generating G-code")
 
         print("Canceled generating G-code")
+
+
 
     def initUI(self):
         pass

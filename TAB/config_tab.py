@@ -18,25 +18,55 @@ class ConfigTab(QWidget):
         main_layout.addWidget(left_half, stretch=20)
 
 
-        # Combo box to select tool
-        self.tool_label = QLabel("Wybierz narzędzie:")
-        self.tool_combobox = QComboBox()
-        self.tool_combobox.addItems(["laser", "plazma", "stożek"])
-        left_layout.addWidget(self.tool_label)
-        left_layout.addWidget(self.tool_combobox)
-
-
-        # Button to open tool parameters dialog
-        self.open_tool_parameters_button = QPushButton("Otwórz parametry narzędzia")
-        self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog)
-        left_layout.addWidget(self.open_tool_parameters_button)
+        
 
         # QFormLayout dla równego ułożenia pól
         form_layout = QFormLayout()
         left_layout.addLayout(form_layout)
 
+        # Konfiguracja narzędzi
+        label_toolsConfiguration = QLabel("<b>Konfiguracja narzędzi:<b>")
+        label_toolsConfiguration.setStyleSheet("font-size: 16px;")
+        form_layout.addRow(label_toolsConfiguration)
+
+        form_layout.addRow(QLabel(""))
+
+        # Combo box to select tool
+        self.tool_combobox = QComboBox()
+        self.tool_combobox.addItems(["laser", "plazma", "stożek"])
+        form_layout.addRow("Wybierz narzędzie:", self.tool_combobox)  # Dodanie ComboBox do form_layout
+
+        form_layout.addRow(QLabel(""))
+
+        # Button to open tool parameters dialog
+        self.open_tool_parameters_button = QPushButton("Otwórz parametry narzędzia")
+        self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog)
+        form_layout.addRow(self.open_tool_parameters_button)  # Dodanie przycisku do form_layout
+
         form_layout.addRow(QLabel(""))
         form_layout.addRow(QLabel(""))
+
+        # Checkbox to enable/disable editing
+        self.spacing_checkbox = QCheckBox("Ręczna regulacja przestrzeni")
+        self.spacing_checkbox.setChecked(False)  # Initially unchecked
+        self.spacing_checkbox.stateChanged.connect(self.toggle_spacing_editable)
+        form_layout.addRow(self.spacing_checkbox)  # Dodanie checkboxa do form_layout
+
+        form_layout.addRow(QLabel(""))
+
+        # Przestrzeń między obiektami
+        self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami:")
+        self.label_spacebetweenobjects.setStyleSheet("font-size: 12px;")
+        self.space_between_objects_lineedit = QLineEdit()
+        self.space_between_objects_lineedit.setFixedWidth(100)
+        self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
+        self.space_between_objects_lineedit.setReadOnly(True)  # Set initially read-only
+
+        form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)  # Dodanie etykiety i pola tekstowego do form_layout
+
+        form_layout.addRow(QLabel(""))
+        form_layout.addRow(QLabel(""))
+
 
         # Konfiguracja nestingu
         label_nestConfiguration = QLabel("<b>Konfiguracja nestigu:<b>")
@@ -153,38 +183,39 @@ class ConfigTab(QWidget):
         # form_layout.addRow(QLabel(""))
 
         # Konfiguracja narzędzi
-        label_toolsConfiguration = QLabel("<b>Konfiguracja narzędzi:<b>")
-        label_toolsConfiguration.setStyleSheet("font-size: 16px;")
-        form_layout.addRow(label_toolsConfiguration)
+        #label_toolsConfiguration = QLabel("<b>Konfiguracja narzędzi:<b>")
+        #label_toolsConfiguration.setStyleSheet("font-size: 16px;")
+        #form_layout.addRow(label_toolsConfiguration)
 
-        form_layout.addRow(QLabel(""))
+        #form_layout.addRow(QLabel(""))
+        
 
         
         # Rodzaj narzędzia
-        label_typeoftool = QLabel("Rodzaj narzędzia:")
-        label_typeoftool.setStyleSheet("font-size: 12px;")
-        self.tolerance_lineedit = QLineEdit()
-        self.tolerance_lineedit.setFixedWidth(100)
-        self.tolerance_lineedit.setStyleSheet("background-color: white;")
-        form_layout.addRow(label_typeoftool, self.tolerance_lineedit)
+        #label_typeoftool = QLabel("Rodzaj narzędzia:")
+        #label_typeoftool.setStyleSheet("font-size: 12px;")
+        #self.tolerance_lineedit = QLineEdit()
+        #self.tolerance_lineedit.setFixedWidth(100)
+        #self.tolerance_lineedit.setStyleSheet("background-color: white;")
+        #form_layout.addRow(label_typeoftool, self.tolerance_lineedit)
 
-        form_layout.addRow(QLabel(""))
+        #form_layout.addRow(QLabel(""))
 
         # Checkbox to enable/disable editing
-        self.spacing_checkbox = QCheckBox("Ręczna regulacja przestrzeni")
-        self.spacing_checkbox.setChecked(False)  # Initially unchecked
-        self.spacing_checkbox.stateChanged.connect(self.toggle_spacing_editable)
-        form_layout.addRow(self.spacing_checkbox)  # Add checkbox to toggle edit mode
+        #self.spacing_checkbox = QCheckBox("Ręczna regulacja przestrzeni")
+        #self.spacing_checkbox.setChecked(False)  # Initially unchecked
+        #self.spacing_checkbox.stateChanged.connect(self.toggle_spacing_editable)
+        #form_layout.addRow(self.spacing_checkbox)  # Add checkbox to toggle edit mode
 
         # Przestrzeń między obiektami
-        self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami:")
-        self.label_spacebetweenobjects.setStyleSheet("font-size: 12px;")
-        self.space_between_objects_lineedit = QLineEdit()
-        self.space_between_objects_lineedit.setFixedWidth(100)
-        self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
-        self.space_between_objects_lineedit.setReadOnly(True)  # Set initially read-only
+        #self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami:")
+        #self.label_spacebetweenobjects.setStyleSheet("font-size: 12px;")
+        #self.space_between_objects_lineedit = QLineEdit()
+        #self.space_between_objects_lineedit.setFixedWidth(100)
+        #self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
+        #self.space_between_objects_lineedit.setReadOnly(True)  # Set initially read-only
         
-        form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)
+        #form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)
 
         # Call toggle_spacing_editable initially to set correct style
         self.toggle_spacing_editable(self.spacing_checkbox.isChecked())
@@ -267,8 +298,7 @@ class ConfigTab(QWidget):
         layout.addWidget(label)
 
     def set_default_values(self):
-        # Ustawienie wartości domyślnych dla poszczególnych elementów
-        self.space_between_objects_lineedit.setText("0.3")
+        
         self.explore_holes_checkbox.setChecked(False)
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)
@@ -278,6 +308,23 @@ class ConfigTab(QWidget):
         self.rotations_slider.setValue(4)
         self.tool_combobox.setCurrentIndex(0)
 
+        # Sprawdzenie czy zmienna saved_parameters istnieje
+        if hasattr(self, 'saved_parameters'):
+            # Ustawienie wartości domyślnych dla poszczególnych elementów
+            if self.saved_parameters['type_tool'] == 'laser':
+                self.space_between_objects_lineedit.setText("0.3")
+
+            elif self.saved_parameters['type_tool'] == 'plazma':
+                self.space_between_objects_lineedit.setText("4")
+
+            elif self.saved_parameters['type_tool'] == 'stożek':
+                self.space_between_objects_lineedit.setText("20")
+        else:
+            QMessageBox.information(self, "Błąd", "Wybierz narzędzie.")
+
+
+    def close_window(self):
+            self.dialog.accept()
 
     def open_tool_parameters_dialog(self):
         tool = self.tool_combobox.currentText()
@@ -345,8 +392,11 @@ class ConfigTab(QWidget):
             form_layout.addRow(default_button)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.save_parameters)
+        button_box.accepted.connect(self.close_window)
+        button_box.accepted.connect(self.save_parameters) 
         button_box.rejected.connect(self.dialog.reject)
+
+        
 
         form_layout.addRow(button_box)
 
@@ -357,6 +407,8 @@ class ConfigTab(QWidget):
 
 
     def set_default_values_for_tools(self, tool):
+
+
         # Tutaj ustawiamy domyślne wartości dla danego narzędzia
         if tool == "laser":
             self.tool_parameters['laser']['cutting_speed'].setText("103")
@@ -425,20 +477,20 @@ class ConfigTab(QWidget):
                 self.tool_parameters.pop(tool_to_remove)
 
         # Wyświetl kolejne okno dialogowe z zawartością słownika
-        self.display_dictionary_dialog(self.saved_parameters)
+       #self.display_dictionary_dialog(self.saved_parameters)
 
-    def display_dictionary_dialog(self, saved_params):
+   #def display_dictionary_dialog(self, saved_params):
         # Utwórz nowe okno dialogowe
-        dictionary_dialog = QDialog()
-        layout = QFormLayout(dictionary_dialog)
+       #dictionary_dialog = QDialog()
+       #layout = QFormLayout(dictionary_dialog)
 
         # Wyświetl zawartość słownika
-        for key, value in saved_params.items():
-            label = QLabel(key)
-            field = QLabel(str(value))
-            layout.addRow(label, field)
+       #for key, value in saved_params.items():
+           #label = QLabel(key)
+           #field = QLabel(str(value))
+           #layout.addRow(label, field)
 
-        dictionary_dialog.exec_()
+       #dictionary_dialog.exec_()
 
 
 
@@ -496,19 +548,22 @@ class ConfigTab(QWidget):
         # Przekazanie parametrów ustawień narzędzia do right part do funkcji
         self.right_part.sended_tool_param(self.saved_parameters)
 
+        # Wywołanie funkcji służącej do automatycznego ustawiania szerokosći pomiędzy obiektami na podstawie wybranego narzędzia
+        #self.right_part.update_space_between_object(self, self.save_parameters['type_tool'])
+
         QMessageBox.information(self, "Success", "Configuration updated successfully.")
     
     def update_rotation_label(self, value):
         # Metoda wywoływana za każdym razem, gdy wartość suwaka się zmienia
         self.rotations_value_label.setText(str(value))
 
-    def update_space_between_objects(self, index):
-        if index == 0:  # Laser
-            self.space_between_objects_lineedit.setText("0.3")
-        elif index == 1:  # Plazma
-            self.space_between_objects_lineedit.setText("4")
-        elif index == 2:  # Stożkowy
-            self.space_between_objects_lineedit.setText("20")
+    #def update_space_between_objects(self, index):
+    #    if index == 0:  # Laser
+    #        self.space_between_objects_lineedit.setText("0.3")
+    #    elif index == 1:  # Plazma
+    #        self.space_between_objects_lineedit.setText("4")
+    #    elif index == 2:  # Stożkowy
+    #        self.space_between_objects_lineedit.setText("20")
     
     def toggle_spacing_editable(self, state):
         if state == Qt.Checked:

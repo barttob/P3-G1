@@ -419,6 +419,8 @@ class RightPart(QWidget):
                 msg.setWindowTitle("Error")
                 msg.exec_()
                 return
+            
+
     
     def generate_rotations(self, num_rotations):
         angle_step = 2 * pi / num_rotations
@@ -446,8 +448,13 @@ class RightPart(QWidget):
         #     print(path)
         file_to_parse = Parser(checked_paths)
         self.inputPoints += file_to_parse.parse_svg()
+        parsed_objects = file_to_parse.parse_svg()
 
         self.volume = Box(width, height)
+
+        if not self.check_fit_in_volume(parsed_objects, width, height):
+            return
+
         # Parametry nestingu
         nfp_config = NfpConfig()
         # Sposob ulozenia obiektow
@@ -546,6 +553,28 @@ class RightPart(QWidget):
 
         # Inform the user about the saved SVG file
         print(f"SVG file saved as: {os.path.abspath(svg_filename)}")
+
+    def check_fit_in_volume(self, parsed_objects, width, height):
+        total_area = sum(obj.area() for obj in parsed_objects)
+        print("Suma powierzchni obiektów:", -total_area) 
+        volume_area = width * height
+        if -total_area > volume_area:
+            min_area = -total_area - volume_area
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("<font size='+2' color='red'>Błąd: Brak wystarczającej przestrzeni dla wszystkich obiektów.</font>")
+            msg.setInformativeText(f"Minimalna wymagana powierzchnia: {min_area} jednostek kwadratowych.\n\n"
+                                    "Suma powierzchni obiektów przekracza dostępną objętość. Proszę dostosować wymiary lub zmniejszyć liczbę obiektów.")
+            msg.setWindowTitle("Błąd")
+            msg.setStyleSheet("QMessageBox { background-color: white; }")
+            msg.exec_()
+            return False
+        else:
+            print("Powierzchnie poszczególnych obiektów:")
+            for i, obj in enumerate(parsed_objects):
+                print(f"Obiekt {i + 1}: {obj.area()}")
+        return True
+
 
     def generate_gcode(self):
         # Open the tool parameters dialog

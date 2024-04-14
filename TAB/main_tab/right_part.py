@@ -16,6 +16,8 @@ import random
 from svg_to_gcode.compiler import Compiler, interfaces
 from svg_to_gcode.svg_parser import parse_file
 from pygcode import Line
+from svg.path import parse_path
+import math
 import multiprocessing
 from PyQt5.QtWidgets import QDialog
 
@@ -449,6 +451,7 @@ class RightPart(QWidget):
         returned_values = file_to_parse.parse_svg()
         returned_input_points, returned_svg_points = returned_values
         self.inputPoints += returned_input_points
+        parsed_objects = returned_input_points
 
         self.volume = Box(width, height)
 

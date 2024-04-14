@@ -15,12 +15,13 @@ class Parser():
     def __init__(self, file_path):
         super().__init__()
         self.inputPoints = []
+        self.svg_path_send = []
         self.svg_paths = file_path
         self.file_label = file_path
         self.svg_to_mm = 0.352777778
 
     def parse_svg(self):
-        self.poinrts = []
+        self.svg_points = []
         path_strings = []
         for path in self.svg_paths:
             occurrences = re.findall("path", path)
@@ -32,12 +33,15 @@ class Parser():
         
         #  rect_strings = [rect for rect in doc.getElementsByTagName('rect')]
         # polygon_strings = [polygon.getAttribute('points') for polygon in doc.getElementsByTagName('polygon')]
+        self.i = 0
         for path_str in path_strings:
+            self.svg_points.append([]) 
             occurrences = re.findall("path", path_str)
             if len(occurrences) > 1:
                 splitted_svg_path = path_str.split("\n")
                 splitted_path_strings = self.extract_multi_d_attribute(splitted_svg_path)
                 self.svg_parse_points = []
+                self.svg_path_send.append(" ".join(splitted_path_strings))
                 for splitted_str in splitted_path_strings:
                     path = parse_path(splitted_str)
                     self.extract_points_from_path(path)
@@ -45,28 +49,30 @@ class Parser():
                 self.inputPoints.append(item)
             else:
                 path = parse_path(path_str)
+                self.svg_path_send.append(path_str)
                 self.svg_parse_points = []
                 self.extract_points_from_path(path)
                 item = Item(self.svg_parse_points)
                 self.inputPoints.append(item)
+            self.i += 1
 
-        # Sample list of points (x, y)
-        x_values = []
-        y_values = []
-        # Extract x and y coordinates from the list of points
-        x_values = [point[0] for point in self.poinrts]
-        y_values = [point[1] for point in self.poinrts]
+        # # Sample list of points (x, y)
+        # x_values = []
+        # y_values = []
+        # # Extract x and y coordinates from the list of points
+        # x_values = [point[0] for point in self.svg_points]
+        # y_values = [point[1] for point in self.svg_points]
 
-        # Plotting the points
-        plt.plot(x_values, y_values, marker='o', linestyle='-')
+        # # Plotting the points
+        # plt.plot(x_values, y_values, marker='o', linestyle='-')
 
-        # Adding title and labels
-        plt.title('Plot from List of Points')
-        plt.xlabel('X-axis')
-        plt.ylabel('Y-axis')
+        # # Adding title and labels
+        # plt.title('Plot from List of Points')
+        # plt.xlabel('X-axis')
+        # plt.ylabel('Y-axis')
 
-        # Displaying the plot
-        plt.grid(True)
+        # # Displaying the plot
+        # plt.grid(True)
         # plt.show()
 
         # for rect in rect_strings:
@@ -89,7 +95,8 @@ class Parser():
         #         points.append(Point(int(float(poly_str[i]) * self.svg_to_mm * 100), int(float(poly_str[i + 1]) * self.svg_to_mm * 100)))
         #     self.inputPoints.append(Item(points))
 
-        return self.inputPoints
+        # return (self.inputPoints, self.svg_points)
+        return (self.inputPoints, self.svg_path_send)
     
 
     def extract_d_attribute(self, path_string):
@@ -120,16 +127,19 @@ class Parser():
             elif isinstance(segment, Arc):
                 self.points_on_arc(segment)
             elif isinstance(segment, Close):
-                print((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)) == self.first)
+                # print((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)) == self.first)
                 self.svg_parse_points.append(Point(self.first[0], self.first[1]))
                 # self.svg_parse_points.append(Point(int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
-                self.poinrts.append(self.first)
-                # self.poinrts.append((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
+                self.svg_points[self.i].append(self.first)
+                # self.svg_points.append((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
             elif isinstance(segment, Move):
-                if i > 0:
+                if i > 1:
                     break
                 else:
                     self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
+                # self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
+                # self.svg_parse_points.append(Point(self.first[0], self.first[1]))
+                # self.svg_points.append(self.first)
                     # self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
                 # self.svg_parse_points.append(Point(int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
             i+=1
@@ -137,14 +147,14 @@ class Parser():
     def points_on_line(self, line):
         self.svg_parse_points.append(Point(int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
         self.svg_parse_points.append(Point(int(line.end.real * self.svg_to_mm * 100), int(line.end.imag * self.svg_to_mm * 100)))
-        self.poinrts.append((int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
+        self.svg_points[self.i].append((int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
 
     def points_on_cubic_bezier(self, bezier):
         for t in range(0, 101, 5):  # Sample 20 points on the curve
             point = bezier.point(t / 100)
             # print(point)
             self.svg_parse_points.append(Point(int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
-            self.poinrts.append((int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
+            self.svg_points[self.i].append((int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
 
     def points_on_quadratic_bezier(self, bezier):
         for t in range(0, 101, 5):  # Sample 20 points on the curve

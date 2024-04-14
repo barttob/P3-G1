@@ -319,6 +319,7 @@ class RightPart(QWidget):
 
         self.setLayout(layout)
         self.inputPoints = []
+        self.svg_to_mm = 0.352777778
         self.volume = None  # Move initialization to display_file method
 
 
@@ -444,11 +445,10 @@ class RightPart(QWidget):
                 return
             
         self.inputPoints = []
-        # for path in checked_paths:
-        #     print(path)
         file_to_parse = Parser(checked_paths)
-        self.inputPoints += file_to_parse.parse_svg()
-        parsed_objects = file_to_parse.parse_svg()
+        returned_values = file_to_parse.parse_svg()
+        returned_input_points, returned_svg_points = returned_values
+        self.inputPoints += returned_input_points
 
         self.volume = Box(width, height)
 
@@ -501,37 +501,44 @@ class RightPart(QWidget):
 
         num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
         
-        for i in range(len(self.inputPoints)):
-            print()
-        #     print(i)
-        #     print(self.inputPoints[i].isFixed())
-        #     print(self.inputPoints[i].holeCount())
-        #     print(self.inputPoints[i].isContourConvex())
-        #     print(self.inputPoints[i].areHolesConvex())
-        #     print(self.inputPoints[i].holeCount())
-        #     print(self.inputPoints[i].boundingBox())
-            # print(self.inputPoints[i].area())
-
-        #fig = Figure(figsize=(8, 8))
-        #ax = fig.add_subplot(111)
 
         # Ustawienie marginesów na zerowe wartości, dodanie parametru tight_layout i pad_inches
         fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
         ax = fig.add_subplot(111)
-
-        for item in self.inputPoints:
+        
+        for i, item in enumerate(self.inputPoints):
             x_values = []
             y_values = []
             transItem = item.transformedShape()
             if item.binId() == 0:
                 rows = len(transItem.toString().strip().split('\n')) - 1
-                for i in range(rows - 1):
-                    x_value = transItem.vertex(i).x()
-                    y_value = transItem.vertex(i).y()
+                for j in range(rows - 1):
+                    x_value = transItem.vertex(j).x()
+                    y_value = transItem.vertex(j).y()
                     x_values.append(x_value)
                     y_values.append(y_value)
                 random_color = (random.random(), random.random(), random.random())
                 ax.plot(x_values, y_values, color=random_color, linewidth=1)
+
+
+                parsed_path = parse_path(returned_svg_points[i])
+                item.resetTransformation()
+
+
+                self.transCount = 0
+                # Rysowanie ścieżki
+                for segment in parsed_path:
+                    x_points = []
+                    y_points = []
+                    # Iteracja przez punkty segmentu
+                    for t in np.linspace(0, 1, num=100):
+                        # Pobranie współrzędnych punktu na ścieżce dla danego parametru t
+                        point = segment.point(t)
+                        transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
+                        x_points.append(transformed_point[0])
+                        y_points.append(transformed_point[1])   
+                    # Narysowanie linii dla tego segmentu
+                    ax.plot(x_points, y_points, color='black', linewidth=1)
 
         ax.set_aspect('equal')
         ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
@@ -580,3 +587,14 @@ class RightPart(QWidget):
         # Open the tool parameters dialog
         self.open_tool_parameters_dialog_right()
 
+
+    def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
+        transformed_points = []
+        for point in points:
+
+            rotated_x = point[0] * math.cos(rotation) - point[1] * math.sin(rotation)
+            rotated_y = point[0] * math.sin(rotation) + point[1] * math.cos(rotation)
+
+            transformed_points.append((rotated_x + trans_x, rotated_y + trans_y))
+            
+        return transformed_points

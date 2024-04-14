@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QDialogButtonBox, QDialog, QSlider
 from PyQt5.QtCore import pyqtSignal, Qt
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
+import sqlite3
 
 class ConfigTab(QWidget):
 
@@ -44,7 +45,6 @@ class ConfigTab(QWidget):
         form_layout.addRow(self.open_tool_parameters_button)  # Dodanie przycisku do form_layout
 
         form_layout.addRow(QLabel(""))
-        form_layout.addRow(QLabel(""))
 
         # Checkbox to enable/disable editing
         self.spacing_checkbox = QCheckBox("Ręczna regulacja przestrzeni")
@@ -65,7 +65,7 @@ class ConfigTab(QWidget):
         form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)  # Dodanie etykiety i pola tekstowego do form_layout
 
         form_layout.addRow(QLabel(""))
-        form_layout.addRow(QLabel(""))
+        #form_layout.addRow(QLabel(""))
 
 
         # Konfiguracja nestingu
@@ -75,9 +75,15 @@ class ConfigTab(QWidget):
         # Poziomy układ dla etykiety i przycisku
         horizontal_layout = QHBoxLayout()
         horizontal_layout.addWidget(label_nestConfiguration)
+        # Domyslne wartosci
         default_button = QPushButton("Ustaw domyślne")
         default_button.clicked.connect(self.set_default_values)  # Połączenie zdarzenia kliknięcia przycisku z funkcją
         horizontal_layout.addWidget(default_button)
+
+        # Wczytanie z bazy
+        load_config_button = QPushButton("Wczytaj z bazy")
+        load_config_button.clicked.connect(self.load_configuration)  # Połączenie zdarzenia kliknięcia przycisku z funkcją
+        horizontal_layout.addWidget(load_config_button)
 
         # Dodanie poziomego układu do layoutu formularza
         form_layout.addRow(horizontal_layout)
@@ -303,24 +309,23 @@ class ConfigTab(QWidget):
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)
         self.accuracy_lineedit.setText("0.65")
-        #self.rotations_combobox.setCurrentIndex(4)
         self.starting_point_combobox.setCurrentIndex(0)
         self.rotations_slider.setValue(4)
         self.tool_combobox.setCurrentIndex(0)
 
         # Sprawdzenie czy zmienna saved_parameters istnieje
-        if hasattr(self, 'saved_parameters'):
-            # Ustawienie wartości domyślnych dla poszczególnych elementów
-            if self.saved_parameters['type_tool'] == 'laser':
-                self.space_between_objects_lineedit.setText("0.3")
+        # if hasattr(self, 'saved_parameters'):
+        #     # Ustawienie wartości domyślnych dla poszczególnych elementów
+        #     if self.saved_parameters['type_tool'] == 'laser':
+        #         self.space_between_objects_lineedit.setText("0.3")
 
-            elif self.saved_parameters['type_tool'] == 'plazma':
-                self.space_between_objects_lineedit.setText("4")
+        #     elif self.saved_parameters['type_tool'] == 'plazma':
+        #         self.space_between_objects_lineedit.setText("4")
 
-            elif self.saved_parameters['type_tool'] == 'stożek':
-                self.space_between_objects_lineedit.setText("20")
-        else:
-            QMessageBox.information(self, "Błąd", "Wybierz narzędzie.")
+        #     elif self.saved_parameters['type_tool'] == 'stożek':
+        #         self.space_between_objects_lineedit.setText("20")
+        # else:
+        #     QMessageBox.information(self, "Błąd", "Wybierz narzędzie.")
 
 
     def close_window(self):
@@ -572,6 +577,51 @@ class ConfigTab(QWidget):
         else:
             self.space_between_objects_lineedit.setReadOnly(True)
             self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")  # Set read-only background color
+
+    def load_configuration(self):
+        # Połączenie z bazą danych
+        conn = sqlite3.connect('./db/database.db')
+        cursor = conn.cursor()
+
+        # Przykładowe zapytanie SQL do pobrania zapisanej konfiguracji
+        selected_config_id = 2  # Przykładowe id wybranej konfiguracji (do zastąpienia odpowiednim id)
+        # Wykonanie zapytania SQL i pobranie danych konfiguracji
+        cursor.execute("SELECT * FROM NestConfig WHERE id = ?", (selected_config_id,))
+        selected_config_data = cursor.fetchone()  # Zapisanie wyniku zapytania jako krotka (tuple)
+
+        conn.close()
+
+    # Sprawdzenie czy udało się pobrać dane konfiguracji
+        if selected_config_data:
+            # Wczytanie danych z krotki (tuple) i ustawienie odpowiednich wartości pól interfejsu
+
+            # Przestrzeń między obiektami (space_between_objects_lineedit)
+            self.space_between_objects_lineedit.setText(str(selected_config_data[2]))
+
+            # Sposób wyrownania obiektów (optimization_combobox)
+            optimization_index = self.optimization_combobox.findText(selected_config_data[3])
+            if optimization_index != -1:
+                self.optimization_combobox.setCurrentIndex(optimization_index)
+
+            # Początkowy punkt (starting_point_combobox)
+            starting_point_index = self.starting_point_combobox.findText(selected_config_data[4])
+            if starting_point_index != -1:
+                self.starting_point_combobox.setCurrentIndex(starting_point_index)
+
+            # Ilość obrotów obiektu (rotations_slider)
+            self.rotations_slider.setValue(selected_config_data[5])
+
+            # Dokładność optymalizacji (accuracy_lineedit)
+            self.accuracy_lineedit.setText(str(selected_config_data[6]))
+
+            # Explorować otwory (explore_holes_checkbox)
+            self.explore_holes_checkbox.setChecked(selected_config_data[7] == 1)
+
+            # Wielowątkowość (parallel_checkbox)
+            self.parallel_checkbox.setChecked(selected_config_data[8] == 1)
+
+        else:
+            QMessageBox.information(self, "Błąd", "Wybierz konfigurację do wczytania.")
 
 
 

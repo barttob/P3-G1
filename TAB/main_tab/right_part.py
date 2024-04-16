@@ -88,6 +88,30 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.plasma_speed_label)
         self.layout.addWidget(self.plasma_speed_edit)
 
+        self.cutting_height_label = QLabel("Wysokość cięcia:")
+        self.cutting_height_edit = QLineEdit()
+        self.layout.addWidget(self.cutting_height_label)
+        self.layout.addWidget(self.cutting_height_edit)
+
+        self.piercing_height_label = QLabel("Wysokość przebicia:")
+        self.piercing_height_edit = QLineEdit()
+        self.layout.addWidget(self.piercing_height_label)
+        self.layout.addWidget(self.piercing_height_edit)
+
+        self.piercing_time_label = QLabel("Czas przebicia:")
+        self.piercing_time_edit = QLineEdit()
+        self.layout.addWidget(self.piercing_time_label)
+        self.layout.addWidget(self.piercing_time_edit)
+
+        self.floating_time_label = QLabel("Czas dryfu:")
+        self.floating_time_edit = QLineEdit()
+        self.layout.addWidget(self.floating_time_label)
+        self.layout.addWidget(self.floating_time_edit)
+
+
+
+
+
 
         # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla stożka
 
@@ -162,63 +186,95 @@ class ToolParametersDialog(QDialog):
             self.cone_speed_edit.setVisible(False)
 
         elif current_tool == "plazma":
-            self.plasma_power_label.setVisible(True)
-            self.plasma_power_edit.setVisible(True)
-            self.plasma_power_edit.setText(global_saved_parameters['plasma_power'])
-            self.plasma_speed_label.setVisible(True)
-            self.plasma_speed_edit.setVisible(True)
-            self.plasma_speed_edit.setText(global_saved_parameters['plasma_speed'])
+            #self.plasma_power_label.setVisible(True)
+            #self.plasma_power_edit.setVisible(True)
+            #self.plasma_power_edit.setText(global_saved_parameters['plasma_power'])
+            #self.plasma_speed_label.setVisible(True)
+            #self.plasma_speed_edit.setVisible(True)
+            #self.plasma_speed_edit.setText(global_saved_parameters['plasma_speed'])
             
 
-            self.cutting_speed_label.setVisible(False)
-            self.cutting_speed_edit.setVisible(False)
-            self.movement_speed_label.setVisible(False)
-            self.movement_speed_edit.setVisible(False)
-            self.depth_label.setVisible(False)
-            self.depth_edit.setVisible(False)
-            self.dwell_label.setVisible(False)
-            self.dwell_edit.setVisible(False)
-            self.unit_label.setVisible(False)
-            self.unit_edit.setVisible(False)
-            self.header_label.setVisible(False)
-            self.header_edit.setVisible(False)
-            self.footer_label.setVisible(False)
-            self.footer_edit.setVisible(False)
-
+            self.cutting_speed_label.setVisible(True)
+            self.cutting_speed_edit.setVisible(True)
+            self.cutting_speed_edit.setText(global_saved_parameters['cutting_speed'])
+            self.movement_speed_label.setVisible(True)
+            self.movement_speed_edit.setVisible(True)
+            self.movement_speed_edit.setText(global_saved_parameters['speed_movement'])
+            self.depth_label.setVisible(True)
+            self.depth_edit.setVisible(True)
+            self.depth_edit.setText(global_saved_parameters['cutting_depth'])
+            self.dwell_label.setVisible(True)
+            self.dwell_edit.setVisible(True)
+            self.dwell_edit.setText(global_saved_parameters['downtime'])
+            self.unit_label.setVisible(True)
+            self.unit_edit.setVisible(True)
+            self.unit_edit.setText(global_saved_parameters['unit'])
+            self.header_label.setVisible(True)
+            self.header_edit.setVisible(True)
+            self.header_edit.setText(global_saved_parameters['custom_header'])
+            self.footer_label.setVisible(True)
+            self.footer_edit.setVisible(True)
+            self.footer_edit.setText(global_saved_parameters['custom_footer'])
+            self.plasma_power_label.setVisible(False)
+            self.plasma_power_edit.setVisible(False)
+            self.plasma_speed_label.setVisible(False)
+            self.plasma_speed_edit.setVisible(False)
             self.cone_power_label.setVisible(False)
             self.cone_power_edit.setVisible(False)
             self.cone_speed_label.setVisible(False)
             self.cone_speed_edit.setVisible(False)
 
+            self.cutting_height_label.setVisible(True)
+            self.cutting_height_edit.setVisible(True)
+            self.cutting_height_edit.setText(global_saved_parameters['cutting_height'])
+            self.piercing_height_label.setVisible(True)
+            self.piercing_height_edit.setVisible(True)
+            self.piercing_height_edit.setText(global_saved_parameters['piercing_height'])
+            self.piercing_time_label.setVisible(True)
+            self.piercing_time_edit.setVisible(True)
+            self.piercing_time_edit.setText(global_saved_parameters['piercing_time'])
+            self.floating_time_label.setVisible(True)
+            self.floating_time_edit.setVisible(True)
+            self.floating_time_edit.setText(global_saved_parameters['floating_time'])
             
 
         elif current_tool == "stożek":
-            self.cone_power_label.setVisible(True)
-            self.cone_power_edit.setVisible(True)
-            self.cone_power_edit.setText(global_saved_parameters['cone_power'])
-            self.cone_speed_label.setVisible(True)
-            self.cone_speed_edit.setVisible(True)
-            self.cone_speed_edit.setText(global_saved_parameters['cone_speed'])
+            #self.cone_power_label.setVisible(True)
+            #self.cone_power_edit.setVisible(True)
+            #self.cone_power_edit.setText(global_saved_parameters['cone_power'])
+            #self.cone_speed_label.setVisible(True)
+            #self.cone_speed_edit.setVisible(True)
+            #self.cone_speed_edit.setText(global_saved_parameters['cone_speed'])
 
-            self.cutting_speed_label.setVisible(False)
-            self.cutting_speed_edit.setVisible(False)
-            self.movement_speed_label.setVisible(False)
-            self.movement_speed_edit.setVisible(False)
-            self.depth_label.setVisible(False)
-            self.depth_edit.setVisible(False)
-            self.dwell_label.setVisible(False)
-            self.dwell_edit.setVisible(False)
-            self.unit_label.setVisible(False)
-            self.unit_edit.setVisible(False)
-            self.header_label.setVisible(False)
-            self.header_edit.setVisible(False)
-            self.footer_label.setVisible(False)
-            self.footer_edit.setVisible(False)
-
+            self.cutting_speed_label.setVisible(True)
+            self.cutting_speed_edit.setVisible(True)
+            self.cutting_speed_edit.setText(global_saved_parameters['cutting_speed'])
+            self.movement_speed_label.setVisible(True)
+            self.movement_speed_edit.setVisible(True)
+            self.movement_speed_edit.setText(global_saved_parameters['speed_movement'])
+            self.depth_label.setVisible(True)
+            self.depth_edit.setVisible(True)
+            self.depth_edit.setText(global_saved_parameters['cutting_depth'])
+            self.dwell_label.setVisible(True)
+            self.dwell_edit.setVisible(True)
+            self.dwell_edit.setText(global_saved_parameters['downtime'])
+            self.unit_label.setVisible(True)
+            self.unit_edit.setVisible(True)
+            self.unit_edit.setText(global_saved_parameters['unit'])
+            self.header_label.setVisible(True)
+            self.header_edit.setVisible(True)
+            self.header_edit.setText(global_saved_parameters['custom_header'])
+            self.footer_label.setVisible(True)
+            self.footer_edit.setVisible(True)
+            self.footer_edit.setText(global_saved_parameters['custom_footer'])
             self.plasma_power_label.setVisible(False)
             self.plasma_power_edit.setVisible(False)
             self.plasma_speed_label.setVisible(False)
             self.plasma_speed_edit.setVisible(False)
+            self.cone_power_label.setVisible(False)
+            self.cone_power_edit.setVisible(False)
+            self.cone_speed_label.setVisible(False)
+            self.cone_speed_edit.setVisible(False)
 
 
 
@@ -340,43 +396,147 @@ class RightPart(QWidget):
         dialog = ToolParametersDialog()
 
         if dialog.exec_():
-            # Tworzenie i konfiguracja okna dialogowego
-            custom_dialog = CustomDialog()
-            custom_dialog.setModal(True)
 
-            # Pobierz parametry narzędzia od użytkownika
-            cutting_speed = float(dialog.cutting_speed_edit.text())
-            movement_speed = float(dialog.movement_speed_edit.text())
-            depth = float(dialog.depth_edit.text())
-            dwell_time = float(dialog.dwell_edit.text())
-            unit = dialog.unit_edit.text()
-            custom_header = [dialog.header_edit.text()]
-            custom_footer = [dialog.footer_edit.text()]
+            if (global_saved_parameters['type_tool']) == "laser":
 
-            # Wygeneruj G-kod z pliku SVG
-            gcode_compiler = Compiler(
-                interfaces.Gcode,   
-                cutting_speed=cutting_speed,
-                movement_speed=movement_speed,
-                pass_depth=depth,
-                dwell_time=dwell_time,
-                unit=unit,
-                custom_header=custom_header,
-                custom_footer=custom_footer
-            )
+                # Tworzenie i konfiguracja okna dialogowego
+                custom_dialog = CustomDialog()
+                custom_dialog.setModal(True)
 
-            curves = parse_file("output.svg")
-            gcode_compiler.append_curves(curves)
+                # Pobierz parametry narzędzia od użytkownika
+                cutting_speed = float(dialog.cutting_speed_edit.text())
+                movement_speed = float(dialog.movement_speed_edit.text())
+                depth = float(dialog.depth_edit.text())
+                dwell_time = float(dialog.dwell_edit.text())
+                unit = dialog.unit_edit.text()
+                custom_header = [dialog.header_edit.text()]
+                custom_footer = [dialog.footer_edit.text()]
 
-            # Odczytaj wygenerowany G-kod
-            generated_gcode = gcode_compiler.compile()
+                # Wygeneruj G-kod z pliku SVG
+                gcode_compiler = Compiler(
+                    interfaces.Gcode,   
+                    cutting_speed=cutting_speed,
+                    movement_speed=movement_speed,
+                    pass_depth=depth,
+                    dwell_time=dwell_time,
+                    unit=unit,
+                    custom_header=custom_header,
+                    custom_footer=custom_footer
+                )
 
-            # Ustaw wygenerowany G-kod w oknie dialogowym
-            custom_dialog.set_generated_gcode(generated_gcode)
+                curves = parse_file("output.svg")
+                gcode_compiler.append_curves(curves)
 
-            custom_dialog.exec_()
+                # Odczytaj wygenerowany G-kod
+                generated_gcode = gcode_compiler.compile()
 
-            print("Canceled generating G-code")
+                # Ustaw wygenerowany G-kod w oknie dialogowym
+                custom_dialog.set_generated_gcode(generated_gcode)
+
+                custom_dialog.exec_()
+
+                print("Canceled generating G-code")
+
+            elif (global_saved_parameters['type_tool']) == "plazma":
+                # tutaj generowanie G-codu dla plazmy
+
+                # Tworzenie i konfiguracja okna dialogowego
+                custom_dialog = CustomDialog()
+                custom_dialog.setModal(True)
+
+                # Pobierz parametry narzędzia od użytkownika
+                cutting_speed = float(dialog.cutting_speed_edit.text())
+                movement_speed = float(dialog.movement_speed_edit.text())
+                depth = float(dialog.depth_edit.text())
+                dwell_time = float(dialog.dwell_edit.text())
+                unit = dialog.unit_edit.text()
+                custom_header = [dialog.header_edit.text()]
+                custom_footer = [dialog.footer_edit.text()]
+
+                # Wygeneruj G-kod z pliku SVG
+                gcode_compiler = Compiler(
+                    interfaces.Gcode,
+                    cutting_speed=cutting_speed,
+                    movement_speed=movement_speed,
+                    pass_depth=depth,
+                    dwell_time=dwell_time,
+                    unit=unit,
+                    custom_header=custom_header,
+                    custom_footer=custom_footer
+                )
+
+                curves = parse_file("output.svg")
+                gcode_compiler.append_curves(curves)
+
+                # Odczytaj wygenerowany G-kod
+                generated_gcode = gcode_compiler.compile()
+
+                # Modyfikacja wygenerowanego G-kodu
+                modified_lines = []
+                for line in generated_gcode.split('\n'):
+                    # Usuń "S255" z każdej linii
+                    modified_tokens = [token for token in line.split() if 'S255' not in token]
+                    modified_line = ' '.join(modified_tokens)
+                    # Sprawdź czy linia zawiera "M3" lub "M5", jeśli tak, dodaj nową linię
+                    if 'M3' in modified_line:
+                        modified_lines.append(modified_line)
+                        modified_lines.append("G0 Z0 F700")  # Dodanie nowej linii która na sztywno ustawia wysokość na 0
+                    elif 'M5' in modified_line:
+                        modified_lines.append(modified_line)
+                        modified_lines.append("G0 Z20 F700")  # # Dodanie nowej linii która na sztywno ustawia wysokość na 20
+                    else:
+                        modified_lines.append(modified_line)
+
+                generated_gcode = '\n'.join(modified_lines)
+
+                # Ustaw wygenerowany G-kod w oknie dialogowym
+                custom_dialog.set_generated_gcode(generated_gcode)
+
+                custom_dialog.exec_()
+
+                print("Canceled generating G-code")
+
+
+            elif (global_saved_parameters['type_tool']) == "stożek":
+                
+                # Tworzenie i konfiguracja okna dialogowego
+                custom_dialog = CustomDialog()
+                custom_dialog.setModal(True)
+
+                # Pobierz parametry narzędzia od użytkownika
+                cutting_speed = float(dialog.cutting_speed_edit.text())
+                movement_speed = float(dialog.movement_speed_edit.text())
+                depth = float(dialog.depth_edit.text())
+                dwell_time = float(dialog.dwell_edit.text())
+                unit = dialog.unit_edit.text()
+                custom_header = [dialog.header_edit.text()]
+                custom_footer = [dialog.footer_edit.text()]
+
+                # Wygeneruj G-kod z pliku SVG
+                gcode_compiler = Compiler(
+                    interfaces.Gcode,   
+                    cutting_speed=cutting_speed,
+                    movement_speed=movement_speed,
+                    pass_depth=depth,
+                    dwell_time=dwell_time,
+                    unit=unit,
+                    custom_header=custom_header,
+                    custom_footer=custom_footer
+                )
+
+                curves = parse_file("output.svg")
+                gcode_compiler.append_curves(curves)
+
+                # Odczytaj wygenerowany G-kod
+                generated_gcode = gcode_compiler.compile()
+
+                # Ustaw wygenerowany G-kod w oknie dialogowym
+                custom_dialog.set_generated_gcode(generated_gcode)
+
+                custom_dialog.exec_()
+
+                print("Canceled generating G-code")
+            
 
         print("Canceled generating G-code")
 

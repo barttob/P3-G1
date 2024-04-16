@@ -364,12 +364,38 @@ class ConfigTab(QWidget):
             # Podobnie jak dla lasera, tworzymy lub aktualizujemy słownik parametrów dla plazmy
             self.tool_parameters['plazma'] = {
                 'type_tool': tool,  # Dodaj pole type_tool
-                'plasma_power': QLineEdit(),
-                'plasma_speed': QLineEdit()
+                #'plasma_power': QLineEdit(),
+                #'plasma_speed': QLineEdit()
+                'cutting_speed': QLineEdit(),
+                'speed_movement': QLineEdit(),
+                'cutting_depth': QLineEdit(),
+                'downtime': QLineEdit(),
+                'unit': QComboBox(),  # Dodaj QComboBox
+                'custom_header': QLineEdit(),
+                'custom_footer': QLineEdit(),
+                'cutting_height':QLineEdit(),
+                'piercing_height':QLineEdit(),
+                'piercing_time':QLineEdit(),
+                'floating_time':QLineEdit()
+
             }
 
-            form_layout.addRow("Moc plazmy:", self.tool_parameters['plazma']['plasma_power'])
-            form_layout.addRow("Prędkość plazmy:", self.tool_parameters['plazma']['plasma_speed'])
+            # Dodaj elementy do QComboBox
+            self.tool_parameters['plazma']['unit'].addItems(["mm", "cale"])  # Dodaj elementy do QComboBox
+
+            #form_layout.addRow("Moc plazmy:", self.tool_parameters['plazma']['plasma_power'])
+            #form_layout.addRow("Prędkość plazmy:", self.tool_parameters['plazma']['plasma_speed'])
+            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['plazma']['cutting_speed'])
+            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['plazma']['speed_movement'])
+            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['plazma']['cutting_depth'])
+            form_layout.addRow("Czas przestoju:", self.tool_parameters['plazma']['downtime'])
+            form_layout.addRow("Jednostka:", self.tool_parameters['plazma']['unit'])
+            form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['plazma']['custom_header'])
+            form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['plazma']['custom_footer'])
+            form_layout.addRow("Wysokość cięcia:", self.tool_parameters['plazma']['cutting_height'])
+            form_layout.addRow("Wysokość przebicia:", self.tool_parameters['plazma']['piercing_height'])
+            form_layout.addRow("Czas przebicia:", self.tool_parameters['plazma']['piercing_time'])
+            form_layout.addRow("Czas dryfu:", self.tool_parameters['plazma']['floating_time'])
 
             # Set default values for all parameters
             default_button = QPushButton("Ustaw domyślne")
@@ -379,12 +405,29 @@ class ConfigTab(QWidget):
             # Analogicznie dla stożka
             self.tool_parameters['stożek'] = {
                 'type_tool': tool,  # Dodaj pole type_tool
-                'cone_power': QLineEdit(),
-                'cone_speed': QLineEdit()
+                #'cone_power': QLineEdit(),
+                #'cone_speed': QLineEdit()
+                'cutting_speed': QLineEdit(),
+                'speed_movement': QLineEdit(),
+                'cutting_depth': QLineEdit(),
+                'downtime': QLineEdit(),
+                'unit': QComboBox(),  # Dodaj QComboBox
+                'custom_header': QLineEdit(),
+                'custom_footer': QLineEdit()
             }
 
-            form_layout.addRow("Moc stożka:", self.tool_parameters['stożek']['cone_power'])
-            form_layout.addRow("Prędkość stożka:", self.tool_parameters['stożek']['cone_speed'])
+            # Dodaj elementy do QComboBox
+            self.tool_parameters['stożek']['unit'].addItems(["mm", "cale"])  # Dodaj elementy do QComboBox
+
+            #form_layout.addRow("Moc stożka:", self.tool_parameters['stożek']['cone_power'])
+            #form_layout.addRow("Prędkość stożka:", self.tool_parameters['stożek']['cone_speed'])
+            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['stożek']['cutting_speed'])
+            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['stożek']['speed_movement'])
+            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['stożek']['cutting_depth'])
+            form_layout.addRow("Czas przestoju:", self.tool_parameters['stożek']['downtime'])
+            form_layout.addRow("Jednostka:", self.tool_parameters['stożek']['unit'])
+            form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['stożek']['custom_header'])
+            form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['stożek']['custom_footer'])
 
             # Set default values for all parameters
             default_button = QPushButton("Ustaw domyślne")
@@ -419,11 +462,29 @@ class ConfigTab(QWidget):
             self.tool_parameters['laser']['custom_header'].setText("M10")
             self.tool_parameters['laser']['custom_footer'].setText("M24")
         elif tool == "plazma":
-            self.tool_parameters['plazma']['plasma_power'].setText("34")
-            self.tool_parameters['plazma']['plasma_speed'].setText("25")
+            #self.tool_parameters['plazma']['plasma_power'].setText("34")
+            #self.tool_parameters['plazma']['plasma_speed'].setText("25")
+            self.tool_parameters['plazma']['cutting_speed'].setText("103")
+            self.tool_parameters['plazma']['speed_movement'].setText("10")
+            self.tool_parameters['plazma']['cutting_depth'].setText("12")
+            self.tool_parameters['plazma']['downtime'].setText("29")
+            self.tool_parameters['plazma']['unit'].setCurrentIndex(0)
+            self.tool_parameters['plazma']['custom_header'].setText("M10")
+            self.tool_parameters['plazma']['custom_footer'].setText("M24")
+            self.tool_parameters['plazma']['cutting_height'].setText("4") # jeszcze nie używane w g-code
+            self.tool_parameters['plazma']['piercing_height'].setText("7") # jeszczenie używane w g-code
+            self.tool_parameters['plazma']['piercing_time'].setText("800") # jeszczenie używane w g-code
+            self.tool_parameters['plazma']['floating_time'].setText("20") # jeszczenie używane w g-code
         elif tool == "stożek":
-            self.tool_parameters['stożek']['cone_power'].setText("123")
-            self.tool_parameters['stożek']['cone_speed'].setText("23")
+            #self.tool_parameters['stożek']['cone_power'].setText("123")
+            #self.tool_parameters['stożek']['cone_speed'].setText("23")
+            self.tool_parameters['stożek']['cutting_speed'].setText("103")
+            self.tool_parameters['stożek']['speed_movement'].setText("10")
+            self.tool_parameters['stożek']['cutting_depth'].setText("12")
+            self.tool_parameters['stożek']['downtime'].setText("29")
+            self.tool_parameters['stożek']['unit'].setCurrentIndex(0)
+            self.tool_parameters['stożek']['custom_header'].setText("M10")
+            self.tool_parameters['stożek']['custom_footer'].setText("M24")
 
     
 

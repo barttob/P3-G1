@@ -20,6 +20,9 @@ from svg.path import parse_path
 import math
 import multiprocessing
 from PyQt5.QtWidgets import QDialog
+import sqlite3
+from datetime import datetime
+import secrets
 
 class ToolParametersDialog(QDialog):
     def __init__(self):
@@ -250,6 +253,10 @@ class CustomDialog(QDialog):
         self.text_edit = QTextEdit()
         layout.addWidget(self.text_edit)
 
+        self.description_edit = QLineEdit()  # Pole tekstowe do wpisania opisu gkodu
+        self.description_edit.setPlaceholderText("Wprowadź opis G kodu...")
+        layout.addWidget(self.description_edit)
+
         simulate_button = QPushButton("Symuluj")
         layout.addWidget(simulate_button)
         simulate_button.clicked.connect(self.simulate_clicked)
@@ -257,6 +264,10 @@ class CustomDialog(QDialog):
         save_button = QPushButton("Zapisz")
         layout.addWidget(save_button)
         save_button.clicked.connect(self.save_clicked)
+
+        save_to_db_button = QPushButton("Zapisz do bazy")
+        layout.addWidget(save_to_db_button)
+        save_to_db_button.clicked.connect(self.save_to_db_clicked)
 
         self.setLayout(layout)
 
@@ -287,6 +298,37 @@ class CustomDialog(QDialog):
             print(f"G-code file saved as: {os.path.abspath(gcode_filename)}")
         else:
             print("Canceled saving the G-code file")
+
+    def save_to_db_clicked(self):
+        # Pobierz opis z pola tekstowego
+        description = self.description_edit.text()
+
+        # Generowanie losowego ciągu znaków w systemie szesnastkowym
+        random_hex_string = secrets.token_hex(4)  # Ustaw długość ciągu na 4 bajty (8 znaków)
+
+        gcode_filename = f"g{random_hex_string}.gcode"
+        gcode_filepath = os.path.join("./g_code/", gcode_filename)
+        
+        with open(gcode_filepath, 'w') as file:
+            file.write(self.generated_gcode)
+
+        # Zapisz rekord do bazy danych
+        conn = sqlite3.connect('./db/database.db')
+        cursor = conn.cursor()
+
+        try:
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cursor.execute("INSERT INTO GcodeHistory (generation_date, file_path, description) VALUES (?, ?, ?)",
+                           (current_date, gcode_filepath, description))
+            conn.commit()
+            print("Record saved to GcodeHistory table successfully.")
+            QMessageBox.information(self, "Success", "G-code and record saved successfully.")
+        except Exception as e:
+            conn.rollback()
+            print(f"Error occurred while saving record to database: {str(e)}")
+            QMessageBox.warning(self, "Error", f"Error occurred while saving record to database: {str(e)}")
+
+        conn.close()
 
 
 class RightPart(QWidget):

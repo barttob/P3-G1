@@ -12,6 +12,7 @@ create_table()
 # insert_tool_parameter('laser', 103, 10, 12, 29, 'NULL' , 'mm', 'M10', 'M24')
 # insert_tool_parameter('plazma', 'NULL', 'NULL', 'NULL', 'NULL', 'NULL' , 'NULL', 'NULL', 'NULL')
 # insert_tool_parameter('stozek', 'NULL', 'NULL', 'NULL', 'NULL', 'NULL' , 'NULL', 'NULL', 'NULL')
+# insert_nest_config('default_laser', 0.3 , 'CENTER', 'CENTER', 4, 0.65, 0, 1, 1)
 # insert_nest_config('best_laser', 0.3 , 'BOTTOM_LEFT', 'CENTER', 360, 1, 0, 1, 1)
 
 class MainWindow(QMainWindow):

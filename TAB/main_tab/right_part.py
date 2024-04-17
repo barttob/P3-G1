@@ -1,8 +1,7 @@
 
 from PyQt5.QtGui import QImage, QPixmap, QPainter
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGraphicsView, QGraphicsScene, QSizePolicy, QPushButton, QFileDialog, \
-    QLabel, QLineEdit, QComboBox, QDialog, QDialogButtonBox, QMessageBox, QTextEdit
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt, pyqtSignal
 import random
 import os
 from matplotlib.figure import Figure
@@ -13,6 +12,7 @@ import sys
 from math import pi
 import numpy as np
 import random
+import time
 from svg_to_gcode.compiler import Compiler, interfaces
 from svg_to_gcode.svg_parser import parse_file
 from pygcode import Line
@@ -346,7 +346,7 @@ class CustomDialog(QDialog):
 
 
 class RightPart(QWidget):
-
+    rotation_displayed = pyqtSignal(float)
     def __init__(self):
         super().__init__()        
 
@@ -359,9 +359,9 @@ class RightPart(QWidget):
         # self.starting_point = None
 
         layout = QVBoxLayout()
-        self.file_label = QLabel("No file selected")
-        layout.addWidget(self.file_label)
-
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMinimum(0)
+        layout.addWidget(self.progress_bar)
         
 
         # Create QGraphicsView and QGraphicsScene for embedding matplotlib plot
@@ -592,10 +592,16 @@ class RightPart(QWidget):
         rotations_text = ", ".join([f"{rot:.2f}" for rot in rotations])
         print(f"Wygenerowane obroty: [{rotations_text}] rad")
         return rotations
+    def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
+        transformed_points = []
+        for point in points:
+            rotated_x = point[0] * math.cos(rotation) - point[1] * math.sin(rotation)
+            rotated_y = point[0] * math.sin(rotation) + point[1] * math.cos(rotation)
+            transformed_points.append((rotated_x + trans_x, rotated_y + trans_y))
+        return transformed_points
 
     def display_file(self, file_paths, width, height, checked_paths):
         variables = [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]
-        #Sprawdzenie konfiguracji
         for var in variables:
             if var is None:
                 msg = QMessageBox()
@@ -605,17 +611,15 @@ class RightPart(QWidget):
                 msg.setWindowTitle("Error")
                 msg.exec_()
                 return
-            
+        self.progress_bar.setMaximum(global_rotations - 1)
         self.inputPoints = []
         file_to_parse = Parser(checked_paths)
         returned_values = file_to_parse.parse_svg()
         returned_input_points, returned_svg_points = returned_values
         self.inputPoints += returned_input_points
-        parsed_objects = returned_input_points
-
         self.volume = Box(width, height)
 
-        if not self.check_fit_in_volume(parsed_objects, width, height):
+        if not self.check_fit_in_volume(self.inputPoints, width, height):
             return
 
         # Parametry nestingu
@@ -662,68 +666,45 @@ class RightPart(QWidget):
 
         spacing = int(global_space_between_objects)
 
-        num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
-        
+        for index, rotation in enumerate(self.generate_rotations(global_rotations)):
+            nfp_config.rotations = [rotation]
+            num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
 
-        # Ustawienie marginesów na zerowe wartości, dodanie parametru tight_layout i pad_inches
-        fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
-        ax = fig.add_subplot(111)
-        
-        for i, item in enumerate(self.inputPoints):
-            x_values = []
-            y_values = []
-            transItem = item.transformedShape()
-            # print(transItem.isContourConvex())
-            if item.binId() == 0:
-                rows = len(transItem.toString().strip().split('\n')) - 1
-                for j in range(rows - 1):
-                    x_value = transItem.vertex(j).x()
-                    y_value = transItem.vertex(j).y()
-                    x_values.append(x_value)
-                    y_values.append(y_value)
-                random_color = (random.random(), random.random(), random.random())
-                # ax.plot(x_values, y_values, color=random_color, linewidth=1)
+            fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
+            ax = fig.add_subplot(111)
+            ax.set_aspect('equal')
+            ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
+            ax.set_ylim([-self.volume.height() / 2, self.volume.height() / 2])
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-
+            for i, item in enumerate(self.inputPoints):
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
 
-
-                self.transCount = 0
-                # Rysowanie ścieżki
                 for segment in parsed_path:
                     x_points = []
                     y_points = []
-                    # Iteracja przez punkty segmentu
                     for t in np.linspace(0, 1, num=100):
-                        # Pobranie współrzędnych punktu na ścieżce dla danego parametru t
                         point = segment.point(t)
                         transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
                         x_points.append(transformed_point[0])
-                        y_points.append(transformed_point[1])   
-                    # Narysowanie linii dla tego segmentu
+                        y_points.append(transformed_point[1])
                     ax.plot(x_points, y_points, color='black', linewidth=1)
 
-        ax.set_aspect('equal')
-        ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
-        ax.set_ylim([-self.volume.height() / 2, self.volume.height() / 2])
+            canvas = FigureCanvas(fig)
+            self.scene.addWidget(canvas)
+            canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            canvas.updateGeometry()
+            self.progress_bar.setValue(index)
+            self.rotation_displayed.emit(rotation)
+            print(f"Displaying rotation: {rotation:.2f} radians")
+            # Odświeżenie widoku
+            
+            self.scene.update()
+            QApplication.processEvents()  # Aktualizacja interfejsu
 
-        ax.set_xticks([])
-        ax.set_yticks([])
-
-        # Save the figure as SVG with tight bounding box and zero padding
-        svg_filename = "output.svg"
-        fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-
-        # Add canvas to scene
-        canvas = FigureCanvas(fig)
-        self.scene.addWidget(canvas)
-
-        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        canvas.updateGeometry()
-
-        # Inform the user about the saved SVG file
-        print(f"SVG file saved as: {os.path.abspath(svg_filename)}")
+            time.sleep(0.2)    # Wait for 1 second before the next rotation
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         total_area = sum(obj.area() for obj in parsed_objects)
@@ -750,15 +731,3 @@ class RightPart(QWidget):
     def generate_gcode(self):
         # Open the tool parameters dialog
         self.open_tool_parameters_dialog_right()
-
-
-    def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
-        transformed_points = []
-        for point in points:
-
-            rotated_x = point[0] * math.cos(rotation) - point[1] * math.sin(rotation)
-            rotated_y = point[0] * math.sin(rotation) + point[1] * math.cos(rotation)
-
-            transformed_points.append((rotated_x + trans_x, rotated_y + trans_y))
-            
-        return transformed_points

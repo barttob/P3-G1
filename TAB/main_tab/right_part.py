@@ -660,7 +660,7 @@ class RightPart(QWidget):
         # Eksploracja otworow
         nfp_config.explore_holes = global_explore_holes
 
-        spacing = int(global_space_between_objects * 0.352777778)
+        spacing = int(global_space_between_objects)
 
         num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
         
@@ -673,6 +673,7 @@ class RightPart(QWidget):
             x_values = []
             y_values = []
             transItem = item.transformedShape()
+            # print(transItem.isContourConvex())
             if item.binId() == 0:
                 rows = len(transItem.toString().strip().split('\n')) - 1
                 for j in range(rows - 1):
@@ -681,7 +682,7 @@ class RightPart(QWidget):
                     x_values.append(x_value)
                     y_values.append(y_value)
                 random_color = (random.random(), random.random(), random.random())
-                ax.plot(x_values, y_values, color=random_color, linewidth=1)
+                # ax.plot(x_values, y_values, color=random_color, linewidth=1)
 
 
                 parsed_path = parse_path(returned_svg_points[i])

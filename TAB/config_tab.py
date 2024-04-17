@@ -129,7 +129,7 @@ class ConfigTab(QWidget):
         label_rotations.setStyleSheet("font-size: 12px;")
         self.rotations_slider = QSlider(Qt.Horizontal)
         self.rotations_slider.setMinimum(0)
-        self.rotations_slider.setMaximum(360)
+        self.rotations_slider.setMaximum(360*2)
         self.rotations_slider.setTickInterval(30)  # Odstęp między znacznikami
         form_layout.addRow(label_rotations, self.rotations_slider)
         form_layout.addRow(QLabel(""))
@@ -312,10 +312,10 @@ class ConfigTab(QWidget):
         if hasattr(self, 'saved_parameters'):
             # Ustawienie wartości domyślnych dla poszczególnych elementów
             if self.saved_parameters['type_tool'] == 'laser':
-                self.space_between_objects_lineedit.setText("0.3")
+                self.space_between_objects_lineedit.setText("10")
 
             elif self.saved_parameters['type_tool'] == 'plazma':
-                self.space_between_objects_lineedit.setText("4")
+                self.space_between_objects_lineedit.setText("40")
 
             elif self.saved_parameters['type_tool'] == 'stożek':
                 self.space_between_objects_lineedit.setText("20")

@@ -1,12 +1,13 @@
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from svg.path import parse_path, Line, CubicBezier, QuadraticBezier, Arc, Close, Move
+from svg.path import parse_path, Path, Line, CubicBezier, QuadraticBezier, Arc, Close, Move
 from pynest2d import *
 import ezdxf
 from ezdxf.addons.drawing import Frontend, RenderContext, layout, svg
 import os
 import uuid
 import re
+import numpy as np
 
 import matplotlib.pyplot as plt
 
@@ -30,12 +31,9 @@ class Parser():
             else:
                 path_strings.append(self.extract_d_attribute(path))
             
-        
-        #  rect_strings = [rect for rect in doc.getElementsByTagName('rect')]
-        # polygon_strings = [polygon.getAttribute('points') for polygon in doc.getElementsByTagName('polygon')]
-        self.i = 0
+
         for path_str in path_strings:
-            self.svg_points.append([]) 
+
             occurrences = re.findall("path", path_str)
             if len(occurrences) > 1:
                 splitted_svg_path = path_str.split("\n")
@@ -48,56 +46,107 @@ class Parser():
                 item = Item(self.svg_parse_points)
                 self.inputPoints.append(item)
             else:
+                # path_str = self.scale_path(path_str, 2)
                 path = parse_path(path_str)
+                # vertices = path
+                self.svg_parse_points = []
+                self.svg_points = []
+                self.extract_points_from_path(path)
+                # if self.is_convex(path):
+                #     vertices = self.remove_concave_vertices(path)
+                print(self.svg_points)
+                print(self.is_convex(self.svg_points))
+                print('retaa')
+                while not self.is_convex(self.svg_points):
+                #     print('reta')
+                    self.svg_points = self.remove_concave_vertices(self.svg_points)
+                    # print(self.is_convex(vertices))
+                # else:
+                #     vertices = path
+                # print(vertices)
+                # vert = Path()
+                # for segment in vertices:
+                #     vert.append(segment)
+                # print(vert.d())
                 self.svg_path_send.append(path_str)
                 self.svg_parse_points = []
-                self.extract_points_from_path(path)
+                for vertex in self.svg_points:
+                    self.svg_parse_points.append(Point(int(vertex[0]), int(vertex[1])))
                 item = Item(self.svg_parse_points)
                 self.inputPoints.append(item)
-            self.i += 1
 
-        # # Sample list of points (x, y)
-        # x_values = []
-        # y_values = []
-        # # Extract x and y coordinates from the list of points
-        # x_values = [point[0] for point in self.svg_points]
-        # y_values = [point[1] for point in self.svg_points]
 
-        # # Plotting the points
-        # plt.plot(x_values, y_values, marker='o', linestyle='-')
-
-        # # Adding title and labels
-        # plt.title('Plot from List of Points')
-        # plt.xlabel('X-axis')
-        # plt.ylabel('Y-axis')
-
-        # # Displaying the plot
-        # plt.grid(True)
-        # plt.show()
-
-        # for rect in rect_strings:
-        #     x = float(rect.getAttribute('x')) * self.svg_to_mm
-        #     y = float(rect.getAttribute('y')) * self.svg_to_mm
-        #     width = float(rect.getAttribute('width')) * self.svg_to_mm
-        #     height = float(rect.getAttribute('height')) * self.svg_to_mm
-        #     points = [Point(int(x * 100), int(y * 100)),
-        #             Point(int((x + width) * 100), int(y * 100)),
-        #             Point(int((x + width) * 100), int((y + height) * 100)),
-        #             Point(int(x * 100), int((y + height) * 100))]
-        #     self.inputPoints.append(Item(points))
-
-        # for polygon_str in polygon_strings:
-        #     poly_str = polygon_str.split()
-        #     numbers = [float(num_str) for item in poly_str for num_str in item.split(',')]
-        #     poly_str = numbers
-        #     points = []
-        #     for i in range(0, len(poly_str) - 1, 2):
-        #         points.append(Point(int(float(poly_str[i]) * self.svg_to_mm * 100), int(float(poly_str[i + 1]) * self.svg_to_mm * 100)))
-        #     self.inputPoints.append(Item(points))
-
-        # return (self.inputPoints, self.svg_points)
+        print('ret')
         return (self.inputPoints, self.svg_path_send)
     
+    def is_convex(self, vertices):
+        # Ensure at least 3 vertices to form a polygon
+        if len(vertices) < 3:
+            return False
+
+        # Calculate the cross product of consecutive edges
+        def cross_product(p0, p1, p2):
+            return (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1])
+
+        # Check the sign of the cross products
+        sign = None
+        for i in range(len(vertices)):
+            # x1 = vertices[i].start.real
+            # y1 = vertices[i].start.imag
+            # x2 = vertices[(i + 1) % len(vertices)].start.real
+            # y2 = vertices[(i + 1) % len(vertices)].start.imag
+            # x3 = vertices[(i + 2) % len(vertices)].start.real
+            # y3 = vertices[(i + 2) % len(vertices)].start.imag
+            x1, y1 = vertices[i]
+            x2, y2 = vertices[(i + 1) % len(vertices)]
+            x3, y3 = vertices[(i + 2) % len(vertices)]
+            cross = cross_product((x1, y1), (x2, y2), (x3, y3))
+            if cross != 0:
+                if sign is None:
+                    sign = cross > 0
+                elif sign != (cross > 0):
+                    return False  # Different signs mean the polygon is concave
+        return True  # All cross products have the same sign, hence convex
+    
+    def remove_concave_vertices(self, path):
+        vertices = path
+        # for segment in path:
+        #     if isinstance(segment, Line):
+        #         vertices.append((segment.start.real, segment.start.imag))
+        #     elif isinstance(segment, CubicBezier):
+        #         for t in range(0, 101, 5):  # Sample 20 points on the curve
+        #             point = segment.point(t / 100)
+        #             # print(point)
+        #             vertices.append((int(point.real), int(point.imag)))
+        #         # vertices.append((segment.start.real, segment.start.imag))
+        #     elif isinstance(segment, Move):
+        #         vertices.append((segment.start.real, segment.start.imag))
+        #     elif isinstance(segment, Close):
+        #         vertices.append((segment.start.real, segment.start.imag))
+        #         break
+
+        new_path_vertices = []
+
+        for i in range(len(vertices)):
+            # print(i)
+            prev_index = (i - 1) % len(vertices)
+            curr_index = i
+            next_index = (i + 1) % len(vertices)
+
+            p0 = vertices[prev_index]
+            p1 = vertices[curr_index]
+            p2 = vertices[next_index]
+
+            # Calculate the cross product
+            cross_product = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1])
+
+            # If the cross product is negative, the vertex is concave
+            if cross_product >= 0:
+                new_path_vertices.append(vertices[i])
+
+        return new_path_vertices
+
+
 
     def extract_d_attribute(self, path_string):
         # Assuming the input path_string is in the format provided
@@ -130,7 +179,7 @@ class Parser():
                 # print((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)) == self.first)
                 self.svg_parse_points.append(Point(self.first[0], self.first[1]))
                 # self.svg_parse_points.append(Point(int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
-                self.svg_points[self.i].append(self.first)
+                self.svg_points.append(self.first)
                 # self.svg_points.append((int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
             elif isinstance(segment, Move):
                 if i > 1:
@@ -146,15 +195,15 @@ class Parser():
 
     def points_on_line(self, line):
         self.svg_parse_points.append(Point(int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
-        self.svg_parse_points.append(Point(int(line.end.real * self.svg_to_mm * 100), int(line.end.imag * self.svg_to_mm * 100)))
-        self.svg_points[self.i].append((int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
+        # self.svg_parse_points.append(Point(int(line.end.real * self.svg_to_mm * 100), int(line.end.imag * self.svg_to_mm * 100)))
+        self.svg_points.append((int(line.start.real * self.svg_to_mm * 100), int(line.start.imag * self.svg_to_mm * 100)))
 
     def points_on_cubic_bezier(self, bezier):
         for t in range(0, 101, 5):  # Sample 20 points on the curve
             point = bezier.point(t / 100)
             # print(point)
             self.svg_parse_points.append(Point(int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
-            self.svg_points[self.i].append((int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
+            self.svg_points.append((int(point.real * self.svg_to_mm * 100), int(point.imag * self.svg_to_mm * 100)))
 
     def points_on_quadratic_bezier(self, bezier):
         for t in range(0, 101, 5):  # Sample 20 points on the curve

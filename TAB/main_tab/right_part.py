@@ -709,6 +709,11 @@ class RightPart(QWidget):
             self.scene.addWidget(canvas)
             canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             canvas.updateGeometry()
+
+            # Zapisz wykres jako plik SVG
+            svg_filename = "output.svg"
+            fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+
             self.progress_bar.setValue(index)
             self.rotation_displayed.emit(rotation)
             print(f"Displaying rotation: {rotation:.2f} radians")

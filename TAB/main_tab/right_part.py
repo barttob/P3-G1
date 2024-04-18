@@ -6,7 +6,7 @@ import random
 import os
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from pynest2d import *
+from pynest2d import NfpConfig, nest, Box
 from utils.parser import Parser
 import sys
 from math import pi
@@ -348,38 +348,22 @@ class CustomDialog(QDialog):
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
     def __init__(self):
-        super().__init__()        
-
-        # self.space_between_objects = None
-        # self.optimization = None
-        # self.rotations = None
-        # self.accuracy = None
-        # self.parallel = True
-        # self.explore_holes = False
-        # self.starting_point = None
-
+        super().__init__()       
         layout = QVBoxLayout()
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
         layout.addWidget(self.progress_bar)
-        
-
-        # Create QGraphicsView and QGraphicsScene for embedding matplotlib plot
         self.graphics_view = QGraphicsView()
         layout.addWidget(self.graphics_view)
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
-
-        # Button to open tool parameters dialog
         self.open_tool_parameters_button = QPushButton("Generuj G-code")
         self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog_right)
         layout.addWidget(self.open_tool_parameters_button)
-
         self.setLayout(layout)
         self.inputPoints = []
         self.svg_to_mm = 0.352777778
         self.volume = None  # Move initialization to display_file method
-
 
     # metoda przyjmująca parametry narzędzia wybrane podczas konifguracji nestingu 
     def sended_tool_param(self, saved_parameters):
@@ -390,8 +374,6 @@ class RightPart(QWidget):
         # Przypisanie wartości zmiennej globalnej
         global_saved_parameters = saved_parameters
         
-
-
     def open_tool_parameters_dialog_right(self):
         dialog = ToolParametersDialog()
 
@@ -540,15 +522,6 @@ class RightPart(QWidget):
 
         print("Canceled generating G-code")
 
-
-
-    def initUI(self):
-        pass
-
-
-    
-
-
     def update(self, space_between_objects, explore_holes, parallel, optimization, accuracy, rotations, starting_point):
         global global_space_between_objects, global_explore_holes, global_parallel, global_optimization, global_accuracy, global_rotations, global_starting_point
         # Update global variables
@@ -583,8 +556,6 @@ class RightPart(QWidget):
                 msg.exec_()
                 return
             
-
-    
     def generate_rotations(self, num_rotations):
         angle_step = 2 * pi / num_rotations
         rotations = [i * angle_step for i in range(num_rotations)]
@@ -726,8 +697,7 @@ class RightPart(QWidget):
             for i, obj in enumerate(parsed_objects):
                 print(f"Obiekt {i + 1}: {obj.area()}")
         return True
-
-
+    
     def generate_gcode(self):
         # Open the tool parameters dialog
         self.open_tool_parameters_dialog_right()

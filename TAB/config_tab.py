@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QDialogButtonBox, QDialog, QSlider
 from PyQt5.QtCore import pyqtSignal, Qt
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
+import sqlite3
 
 class ConfigTab(QWidget):
 
@@ -9,16 +10,13 @@ class ConfigTab(QWidget):
         self.right_part = right_part
         main_layout = QHBoxLayout()
         self.setLayout(main_layout)     
-        self.tool_parameters = {}   
+        self.tool_parameters = {}  
 
         # Lewa połowa 
         left_half = QWidget(self)
         left_half.setStyleSheet("background-color: rgb(142, 191, 250);")
         left_layout = QVBoxLayout(left_half)
-        main_layout.addWidget(left_half, stretch=20)
-
-
-        
+        main_layout.addWidget(left_half, stretch=20)        
 
         # QFormLayout dla równego ułożenia pól
         form_layout = QFormLayout()
@@ -67,7 +65,6 @@ class ConfigTab(QWidget):
         form_layout.addRow(QLabel(""))
         form_layout.addRow(QLabel(""))
 
-
         # Konfiguracja nestingu
         label_nestConfiguration = QLabel("<b>Konfiguracja nestigu:<b>")
         label_nestConfiguration.setStyleSheet("font-size: 16px;")
@@ -75,9 +72,40 @@ class ConfigTab(QWidget):
         # Poziomy układ dla etykiety i przycisku
         horizontal_layout = QHBoxLayout()
         horizontal_layout.addWidget(label_nestConfiguration)
+
+        # Domyslne wartosci
         default_button = QPushButton("Ustaw domyślne")
         default_button.clicked.connect(self.set_default_values)  # Połączenie zdarzenia kliknięcia przycisku z funkcją
         horizontal_layout.addWidget(default_button)
+
+        form_layout.addRow(QLabel(""))
+
+        # Wczytanie z bazy
+        # Tworzenie ComboBoxa z nazwami konfiguracji
+        self.config_names_combobox = QComboBox()
+        self.config_names_combobox.setFixedWidth(120)
+        form_layout.addRow(self.config_names_combobox)
+
+        # Dodanie dodatkowego pustego wiersza dla estetyki
+        form_layout.addRow(QLabel(""))  # Pusty wiersz
+
+        # Połączenie z bazą danych
+        conn = sqlite3.connect('./db/database.db')
+        cursor = conn.cursor()
+
+        # Pobranie nazw konfiguracji z bazy danych
+        cursor.execute("SELECT id, config_name FROM NestConfig")
+        configurations = cursor.fetchall()  # Zapisanie wyników zapytania jako lista krotek (id, config_name)
+
+        # Dodanie nazw konfiguracji do listy rozwijanej
+        for config_id, config_name in configurations:
+            self.config_names_combobox.addItem(config_name, userData=config_id)  # Dodaj nazwę do listy rozwijanej
+
+        conn.close()
+
+        # Połączenie zdarzenia wyboru elementu listy rozwijanej z funkcją wczytywania danych
+        self.config_names_combobox.currentIndexChanged.connect(self.load_selected_configuration)
+        horizontal_layout.addWidget(self.config_names_combobox)
 
         # Dodanie poziomego układu do layoutu formularza
         form_layout.addRow(horizontal_layout)
@@ -303,7 +331,6 @@ class ConfigTab(QWidget):
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)
         self.accuracy_lineedit.setText("0.65")
-        #self.rotations_combobox.setCurrentIndex(4)
         self.starting_point_combobox.setCurrentIndex(0)
         self.rotations_slider.setValue(4)
         self.tool_combobox.setCurrentIndex(0)
@@ -328,9 +355,9 @@ class ConfigTab(QWidget):
 
     def open_tool_parameters_dialog(self):
         tool = self.tool_combobox.currentText()
+        horizontal_layout = QHBoxLayout()
         self.dialog = QDialog()  # Tworzenie okna dialogowego i przypisanie do atrybutu self.dialog
-
-        form_layout = QFormLayout(self.dialog)  # Użyj self.dialog zamiast dialog
+        form_layout = QFormLayout(self.dialog)  # Użyj self.dialog zamiast dialog        
 
         if tool == "laser":
             # Tworzymy lub aktualizujemy słownik parametrów dla lasera
@@ -360,6 +387,36 @@ class ConfigTab(QWidget):
             default_button = QPushButton("Ustaw domyślne")
             default_button.clicked.connect(lambda: self.set_default_values_for_tools('laser'))
             form_layout.addRow(default_button)
+            
+            # Zapis do bazy
+            save_button = QPushButton("Zapisz w bazie")
+            save_button.clicked.connect(self.save_parameters_db)  # Połączenie przycisku z funkcją zapisu danych
+            form_layout.addRow(save_button)  # Dodanie przycisku "Zapisz" do layoutu
+
+            # Wczytanie z bazy
+            # Tworzenie ComboBoxa z nazwami konfiguracji
+            self.tool_config_names_combobox = QComboBox()
+            self.tool_config_names_combobox.setFixedWidth(120)
+            form_layout.addRow(self.tool_config_names_combobox)
+
+            # Połączenie z bazą danych
+            conn = sqlite3.connect('./db/database.db')
+            cursor = conn.cursor()
+
+            # Pobranie nazw konfiguracji z bazy danych
+            cursor.execute("SELECT id, tool_type FROM ToolParameters WHERE tool_type = 'laser'")
+            configurations = cursor.fetchall()  # Zapisanie wyników zapytania jako lista krotek (id, config_name)
+
+            # Dodanie nazw konfiguracji do listy rozwijanej
+            for id, tool_type in configurations:
+                self.tool_config_names_combobox.addItem(tool_type, userData=id)  # Dodaj nazwę do listy rozwijanej
+
+            conn.close()
+
+            # Połączenie zdarzenia wyboru elementu listy rozwijanej z funkcją wczytywania danych
+            self.tool_config_names_combobox.activated.connect(self.load_selected_laser_configuration)
+            form_layout.addWidget(self.tool_config_names_combobox)
+
         elif tool == "plazma":
             # Podobnie jak dla lasera, tworzymy lub aktualizujemy słownik parametrów dla plazmy
             self.tool_parameters['plazma'] = {
@@ -437,9 +494,7 @@ class ConfigTab(QWidget):
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.close_window)
         button_box.accepted.connect(self.save_parameters) 
-        button_box.rejected.connect(self.dialog.reject)
-
-        
+        button_box.rejected.connect(self.dialog.reject)        
 
         form_layout.addRow(button_box)
 
@@ -447,10 +502,7 @@ class ConfigTab(QWidget):
             # Do something with the parameters entered in the dialog
             pass
 
-
-
     def set_default_values_for_tools(self, tool):
-
 
         # Tutaj ustawiamy domyślne wartości dla danego narzędzia
         if tool == "laser":
@@ -485,30 +537,6 @@ class ConfigTab(QWidget):
             self.tool_parameters['stożek']['unit'].setCurrentIndex(0)
             self.tool_parameters['stożek']['custom_header'].setText("M10")
             self.tool_parameters['stożek']['custom_footer'].setText("M24")
-
-    
-
-
-
-        # Przekazanie parametrów do right part
-        #self.right_part.sended_tool_param(self.saved_parameters)
-
-
-
-      
-
-
-
-
-
-
-    ###############################################################################
-
-
-    
-
-
-    
 
     def save_parameters(self):
         tool = self.tool_combobox.currentText()
@@ -557,17 +585,6 @@ class ConfigTab(QWidget):
 
         # Przekazanie parametrów do right part
         #self.right_part.sended_tool_param(self.saved_parameters)
-
-
-
-      
-
-
-
-
-
-
-    ###############################################################################
 
     def submit_value(self):
         # Sprawdź, czy saved_parameters nie jest puste
@@ -634,6 +651,117 @@ class ConfigTab(QWidget):
             self.space_between_objects_lineedit.setReadOnly(True)
             self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")  # Set read-only background color
 
+    def load_selected_configuration(self):
+        # Pobranie wybranego indeksu z listy rozwijanej
+        selected_index = self.config_names_combobox.currentIndex()
 
+        # Pobranie id wybranej konfiguracji z danych użytkownika
+        selected_config_id = self.config_names_combobox.itemData(selected_index)
 
+        # Połączenie z bazą danych
+        conn = sqlite3.connect('./db/database.db')
+        cursor = conn.cursor()
 
+        # Wykonanie zapytania SQL i pobranie danych wybranej konfiguracji
+        cursor.execute("SELECT * FROM NestConfig WHERE id = ?", (selected_config_id,))
+        selected_config_data = cursor.fetchone()  # Zapisanie wyniku zapytania jako krotka (tuple)
+
+        conn.close()
+
+        # Wczytanie danych z krotki (tuple) i ustawienie odpowiednich wartości pól interfejsu
+        if selected_config_data:
+            # Przestrzeń między obiektami (space_between_objects_lineedit)
+            self.space_between_objects_lineedit.setText(str(selected_config_data[2]))
+
+            # Sposób wyrownania obiektów (optimization_combobox)
+            optimization_index = self.optimization_combobox.findText(selected_config_data[3])
+            if optimization_index != -1:
+                self.optimization_combobox.setCurrentIndex(optimization_index)
+
+            # Początkowy punkt (starting_point_combobox)
+            starting_point_index = self.starting_point_combobox.findText(selected_config_data[4])
+            if starting_point_index != -1:
+                self.starting_point_combobox.setCurrentIndex(starting_point_index)
+
+            # Ilość obrotów obiektu (rotations_slider)
+            self.rotations_slider.setValue(selected_config_data[5])
+
+            # Dokładność optymalizacji (accuracy_lineedit)
+            self.accuracy_lineedit.setText(str(selected_config_data[6]))
+
+            # Explorować otwory (explore_holes_checkbox)
+            self.explore_holes_checkbox.setChecked(selected_config_data[7] == 1)
+
+            # Wielowątkowość (parallel_checkbox)
+            self.parallel_checkbox.setChecked(selected_config_data[8] == 1)
+
+        else:
+            QMessageBox.information(self, "Błąd", "Wybierz konfigurację do wczytania.")
+
+    def save_parameters_db(self):
+        tool = self.tool_combobox.currentText()
+        if tool in self.tool_parameters:
+            params = self.tool_parameters[tool]
+            # Pobranie wpisanych wartości parametrów narzędzia
+            cutting_speed = params['cutting_speed'].text()
+            speed_movement = params['speed_movement'].text()
+            cutting_depth = params['cutting_depth'].text()
+            downtime = params['downtime'].text()
+            unit = params['unit'].currentText()
+            custom_header = params['custom_header'].text()
+            custom_footer = params['custom_footer'].text()
+
+            # Połączenie z bazą danych
+            conn = sqlite3.connect('./db/database.db')
+            cursor = conn.cursor()
+
+            # Wstawienie danych do tabeli ToolParameters
+            cursor.execute('''
+                INSERT INTO ToolParameters (tool_type, cutting_speed, move_speed, cutting_depth, stop_time, power, units, heading, footer)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (tool, cutting_speed, speed_movement, cutting_depth, downtime, 0, unit, custom_header, custom_footer))
+
+            conn.commit()  # Potwierdzenie transakcji
+            conn.close()  # Zamknięcie połączenia
+
+            QMessageBox.information(self, "Sukces", "Parametry narzędzia zapisano do bazy danych.")
+    
+    def load_selected_laser_configuration(self):
+        # Pobierz id wybranej konfiguracji narzędzia laserowego
+        selected_index = self.tool_config_names_combobox.currentIndex()
+        selected_config_id = self.tool_config_names_combobox.itemData(selected_index)
+
+        # Połączenie z bazą danych
+        conn = sqlite3.connect('./db/database.db')
+        cursor = conn.cursor()
+
+        # Wykonaj zapytanie SQL, aby pobrać dane wybranej konfiguracji narzędzia
+        cursor.execute("SELECT * FROM ToolParameters WHERE id = ?", (selected_config_id,))
+        selected_config_data = cursor.fetchone()
+
+        conn.close()
+
+        # Wczytaj dane z krotki (tuple) i ustaw odpowiednie wartości pól interfejsu
+        if selected_config_data:
+            # Pobierz dane z krotki
+            tool_type = selected_config_data[1]
+            cutting_speed = selected_config_data[2]
+            move_speed = selected_config_data[3]
+            cutting_depth = selected_config_data[4]
+            stop_time = selected_config_data[5]
+            power = selected_config_data[6]
+            units = selected_config_data[7]
+            heading = selected_config_data[8]
+            footer = selected_config_data[9]
+
+            # Ustaw wartości pól tekstowych na podstawie wczytanych danych
+            self.tool_parameters['laser']['cutting_speed'].setText(str(cutting_speed))
+            self.tool_parameters['laser']['speed_movement'].setText(str(move_speed))
+            self.tool_parameters['laser']['cutting_depth'].setText(str(cutting_depth))
+            self.tool_parameters['laser']['downtime'].setText(str(stop_time))
+            self.tool_parameters['laser']['unit'].setCurrentText(units)
+            self.tool_parameters['laser']['custom_header'].setText(heading)
+            self.tool_parameters['laser']['custom_footer'].setText(footer)
+        else:
+            # Komunikat informacyjny w przypadku braku danych
+            QMessageBox.information(self, "Błąd", "Wybierz konfigurację do wczytania.")

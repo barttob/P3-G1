@@ -55,6 +55,11 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.movement_speed_label)
         self.layout.addWidget(self.movement_speed_edit)
 
+        self.probing_depth_label = QLabel("Głębokość sondowania:")  # brak w gcodzie
+        self.probing_depth_edit = QLineEdit()
+        self.layout.addWidget(self.probing_depth_label)
+        self.layout.addWidget(self.probing_depth_edit)
+
         self.depth_label = QLabel("Głębokość cięcia:")  # brak w gcodzie
         self.depth_edit = QLineEdit()
         self.layout.addWidget(self.depth_label)
@@ -106,10 +111,10 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.piercing_time_label)
         self.layout.addWidget(self.piercing_time_edit)
 
-        self.floating_time_label = QLabel("Czas dryfu:")
-        self.floating_time_edit = QLineEdit()
-        self.layout.addWidget(self.floating_time_label)
-        self.layout.addWidget(self.floating_time_edit)
+        self.floating_height_label = QLabel("Czas dryfu:")
+        self.floating_height_edit = QLineEdit()
+        self.layout.addWidget(self.floating_height_label)
+        self.layout.addWidget(self.floating_height_edit)
 
 
 
@@ -206,6 +211,9 @@ class ToolParametersDialog(QDialog):
             self.depth_label.setVisible(True)
             self.depth_edit.setVisible(True)
             self.depth_edit.setText(global_saved_parameters['cutting_depth'])
+            self.probing_depth_label.setVisible(True)
+            self.probing_depth_edit.setVisible(True)
+            self.probing_depth_edit.setText(global_saved_parameters['probing_depth'])
             self.dwell_label.setVisible(True)
             self.dwell_edit.setVisible(True)
             self.dwell_edit.setText(global_saved_parameters['downtime'])
@@ -236,9 +244,9 @@ class ToolParametersDialog(QDialog):
             self.piercing_time_label.setVisible(True)
             self.piercing_time_edit.setVisible(True)
             self.piercing_time_edit.setText(global_saved_parameters['piercing_time'])
-            self.floating_time_label.setVisible(True)
-            self.floating_time_edit.setVisible(True)
-            self.floating_time_edit.setText(global_saved_parameters['floating_time'])
+            self.floating_height_label.setVisible(True)
+            self.floating_height_edit.setVisible(True)
+            self.floating_height_edit.setText(global_saved_parameters['floating_height'])
             
 
         elif current_tool == "stożek":
@@ -495,23 +503,45 @@ class RightPart(QWidget):
                 # Odczytaj wygenerowany G-kod
                 generated_gcode = gcode_compiler.compile()
 
+
+                # Pobierz parametry narzędzia od użytkownika potrzebne do modyfikacji G kodu dla narzędzia plazma
+                piercing_height = dialog.piercing_height_edit.text()
+                piercing_time = dialog.piercing_time_edit.text()
+                #cutting_height = dialog.cutting_height_edit.text()
+                #cutting_height = float(dialog.cutting_height_edit.text()) + 8.21
+                cutting_height = str(round(float(dialog.cutting_height_edit.text()) + 6.21, 2))
+                floating_height = dialog.floating_height_edit.text()
+                probing_depth = dialog.probing_depth_edit.text()
+
                 # Modyfikacja wygenerowanego G-kodu
                 modified_lines = []
                 for line in generated_gcode.split('\n'):
                     # Usuń "S255" z każdej linii
                     modified_tokens = [token for token in line.split() if 'S255' not in token]
                     modified_line = ' '.join(modified_tokens)
-                    # Sprawdź czy linia zawiera "M3" lub "M5", jeśli tak, dodaj nową linię
+                    # Dodaj nowe linie przed linią z "M3"
                     if 'M3' in modified_line:
-                        modified_lines.append(modified_line)
-                        modified_lines.append("G0 Z0 F700")  # Dodanie nowej linii która na sztywno ustawia wysokość na 0
+                        modified_lines.append("G0 Z5")  # Linia (a)
+                        modified_lines.append(f"G38.2 Z{probing_depth} F100")  # Głębokość sondowania (probing_depth)
+                        modified_lines.append("G10 L20 P1 Z0")  # Linia (c)
+                        modified_lines.append("G1 Z8.21 F1000")  # Linia (d)
+                        modified_lines.append("G10 L20 P1 Z0")  # Linia (e)
+                        modified_lines.append(f"G0 Z{piercing_height} F2500")  # Ustawienie wysokośći przekłucia (piercing height)
+                        modified_lines.append(modified_line)  # Dodaj oryginalną linię z "M3" po dodaniu nowych linii
+                        modified_lines.append("M300")  # Waiting for ARC OK
+                        modified_lines.append(f"G4 P{piercing_time}")  # Czas przekłucia [ms] piercing time
+                        modified_lines.append(f"G0 Z{cutting_height} F700")  # Wysokość cięcia cutting height
                     elif 'M5' in modified_line:
-                        modified_lines.append(modified_line)
-                        modified_lines.append("G0 Z20 F700")  # # Dodanie nowej linii która na sztywno ustawia wysokość na 20
+                        modified_lines.append(modified_line)  # Dodaj oryginalną linię z "M5"
+                        modified_lines.append(f"G0 Z{floating_height} F2500")  # Dodaj wysokość dryfu (flying height)
                     else:
                         modified_lines.append(modified_line)
 
                 generated_gcode = '\n'.join(modified_lines)
+
+
+
+
 
                 # Ustaw wygenerowany G-kod w oknie dialogowym
                 custom_dialog.set_generated_gcode(generated_gcode)

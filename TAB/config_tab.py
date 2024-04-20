@@ -426,6 +426,7 @@ class ConfigTab(QWidget):
                 'cutting_speed': QLineEdit(),
                 'speed_movement': QLineEdit(),
                 'cutting_depth': QLineEdit(),
+                'probing_depth': QLineEdit(),
                 'downtime': QLineEdit(),
                 'unit': QComboBox(),  # Dodaj QComboBox
                 'custom_header': QLineEdit(),
@@ -433,7 +434,7 @@ class ConfigTab(QWidget):
                 'cutting_height':QLineEdit(),
                 'piercing_height':QLineEdit(),
                 'piercing_time':QLineEdit(),
-                'floating_time':QLineEdit()
+                'floating_height':QLineEdit()
 
             }
 
@@ -442,17 +443,18 @@ class ConfigTab(QWidget):
 
             #form_layout.addRow("Moc plazmy:", self.tool_parameters['plazma']['plasma_power'])
             #form_layout.addRow("Prędkość plazmy:", self.tool_parameters['plazma']['plasma_speed'])
-            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['plazma']['cutting_speed'])
-            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['plazma']['speed_movement'])
-            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['plazma']['cutting_depth'])
-            form_layout.addRow("Czas przestoju:", self.tool_parameters['plazma']['downtime'])
-            form_layout.addRow("Jednostka:", self.tool_parameters['plazma']['unit'])
-            form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['plazma']['custom_header'])
-            form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['plazma']['custom_footer'])
-            form_layout.addRow("Wysokość cięcia:", self.tool_parameters['plazma']['cutting_height'])
-            form_layout.addRow("Wysokość przebicia:", self.tool_parameters['plazma']['piercing_height'])
-            form_layout.addRow("Czas przebicia:", self.tool_parameters['plazma']['piercing_time'])
-            form_layout.addRow("Czas dryfu:", self.tool_parameters['plazma']['floating_time'])
+            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['plazma']['cutting_speed'])            # jest 
+            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['plazma']['speed_movement'])            # jest
+            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['plazma']['cutting_depth'])           # nie ma
+            form_layout.addRow("Głębokość sondowania:", self.tool_parameters['plazma']['probing_depth'])       # jest 
+            form_layout.addRow("Czas przestoju:", self.tool_parameters['plazma']['downtime'])                  # jest
+            form_layout.addRow("Jednostka:", self.tool_parameters['plazma']['unit'])                           # jest
+            form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['plazma']['custom_header'])    # jest
+            form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['plazma']['custom_footer'])      # jest
+            form_layout.addRow("Wysokość cięcia:", self.tool_parameters['plazma']['cutting_height'])           # jest
+            form_layout.addRow("Wysokość przebicia:", self.tool_parameters['plazma']['piercing_height'])       # jest
+            form_layout.addRow("Czas przebicia:", self.tool_parameters['plazma']['piercing_time'])             # jest
+            form_layout.addRow("Wysokość dryfu:", self.tool_parameters['plazma']['floating_height'])           # jest
 
             # Set default values for all parameters
             default_button = QPushButton("Ustaw domyślne")
@@ -519,14 +521,15 @@ class ConfigTab(QWidget):
             self.tool_parameters['plazma']['cutting_speed'].setText("103")
             self.tool_parameters['plazma']['speed_movement'].setText("10")
             self.tool_parameters['plazma']['cutting_depth'].setText("12")
+            self.tool_parameters['plazma']['probing_depth'].setText("-24")
             self.tool_parameters['plazma']['downtime'].setText("29")
             self.tool_parameters['plazma']['unit'].setCurrentIndex(0)
-            self.tool_parameters['plazma']['custom_header'].setText("M10")
+            self.tool_parameters['plazma']['custom_header'].setText("(for plasma model Cigweld Cutskill 45)")
             self.tool_parameters['plazma']['custom_footer'].setText("M24")
             self.tool_parameters['plazma']['cutting_height'].setText("4") # jeszcze nie używane w g-code
             self.tool_parameters['plazma']['piercing_height'].setText("7") # jeszczenie używane w g-code
             self.tool_parameters['plazma']['piercing_time'].setText("800") # jeszczenie używane w g-code
-            self.tool_parameters['plazma']['floating_time'].setText("20") # jeszczenie używane w g-code
+            self.tool_parameters['plazma']['floating_height'].setText("20") # jeszczenie używane w g-code
         elif tool == "stożek":
             #self.tool_parameters['stożek']['cone_power'].setText("123")
             #self.tool_parameters['stożek']['cone_speed'].setText("23")

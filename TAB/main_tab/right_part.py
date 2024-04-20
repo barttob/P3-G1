@@ -389,23 +389,40 @@ class CustomDialog(QDialog):
 
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
+
     def __init__(self):
-        super().__init__()       
-        layout = QVBoxLayout()
+        super().__init__()
+        layout = QVBoxLayout(self)  # Set the layout directly to the QWidget
+
+        # Pasek postępu
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
         layout.addWidget(self.progress_bar)
+
+        # Główny widget zakładek
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget)
+        
+        # Zakładka dla Nesting (Tutaj umieszczam QGraphicsView)
+        self.nesting_tab = QWidget()
+        self.nesting_layout = QVBoxLayout(self.nesting_tab)
         self.graphics_view = QGraphicsView()
-        layout.addWidget(self.graphics_view)
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
+        self.nesting_layout.addWidget(self.graphics_view)
+        self.tab_widget.addTab(self.nesting_tab, "Nesting")
+
+        # Przycisk Generuj G-code
         self.open_tool_parameters_button = QPushButton("Generuj G-code")
         self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog_right)
         layout.addWidget(self.open_tool_parameters_button)
-        self.setLayout(layout)
+
+        self.setLayout(layout)  # Potwierdzenie ustawienia layoutu dla QWidget
+
+        # Dodatkowe parametry
         self.inputPoints = []
         self.svg_to_mm = 0.352777778
-        self.volume = None  # Move initialization to display_file method
+        self.volume = None  # Przeniesienie inicjalizacji do metody display_file
 
     # metoda przyjmująca parametry narzędzia wybrane podczas konifguracji nestingu 
     def sended_tool_param(self, saved_parameters):
@@ -679,45 +696,62 @@ class RightPart(QWidget):
 
         spacing = int(global_space_between_objects)
 
-        for index, rotation in enumerate(self.generate_rotations(global_rotations)):
-            nfp_config.rotations = [rotation]
-            num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
+        # Generate the list of rotations just once
+        all_rotations = self.generate_rotations(global_rotations)
 
-            fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
-            ax = fig.add_subplot(111)
-            ax.set_aspect('equal')
-            ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
-            ax.set_ylim([-self.volume.height() / 2, self.volume.height() / 2])
-            ax.set_xticks([])
-            ax.set_yticks([])
+        for index, rotation in enumerate(all_rotations):
+            if index < len(all_rotations) - 1:
+                # For each iteration except the last, use a single rotation
+                nfp_config.rotations = [rotation]
+                nest(self.inputPoints, self.volume, spacing, nfp_config)
+                self.draw_scene(index, rotation, returned_svg_points, single_rotation=True)
+            else:
+                # In the last iteration, use all rotations
+                nfp_config.rotations = all_rotations
+                nest(self.inputPoints, self.volume, spacing, nfp_config)
+                self.draw_scene(index, rotation, returned_svg_points, single_rotation=False)
+                print(f"Displaying rotation: {rotation:.2f} radians")
+                print("SVG file saved as:", os.path.abspath("output.svg"))
 
-            for i, item in enumerate(self.inputPoints):
-                parsed_path = parse_path(returned_svg_points[i])
-                item.resetTransformation()
+    def draw_scene(self, index, rotation, svg_points, single_rotation):
+        fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
+        ax = fig.add_subplot(111)
+        ax.set_aspect('equal')
+        ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
+        ax.set_ylim([-self.volume.height() / 2, self.volume.height() / 2])
+        ax.set_xticks([])
+        ax.set_yticks([])
 
-                for segment in parsed_path:
-                    x_points = []
-                    y_points = []
-                    for t in np.linspace(0, 1, num=100):
-                        point = segment.point(t)
-                        transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
-                        x_points.append(transformed_point[0])
-                        y_points.append(transformed_point[1])
-                    ax.plot(x_points, y_points, color='black', linewidth=1)
+        for i, item in enumerate(self.inputPoints):
+            parsed_path = parse_path(svg_points[i])
+            item.resetTransformation()
 
-            canvas = FigureCanvas(fig)
-            self.scene.addWidget(canvas)
-            canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            canvas.updateGeometry()
-            self.progress_bar.setValue(index)
-            self.rotation_displayed.emit(rotation)
-            print(f"Displaying rotation: {rotation:.2f} radians")
-            # Odświeżenie widoku
-            
-            self.scene.update()
-            QApplication.processEvents()  # Aktualizacja interfejsu
+            for segment in parsed_path:
+                x_points = []
+                y_points = []
+                for t in np.linspace(0, 1, num=100):
+                    point = segment.point(t)
+                    transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
+                    x_points.append(transformed_point[0])
+                    y_points.append(transformed_point[1])
+                ax.plot(x_points, y_points, color='black', linewidth=1)
 
-            time.sleep(0.2)    # Wait for 1 second before the next rotation
+        canvas = FigureCanvas(fig)
+        self.scene.addWidget(canvas)
+        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        canvas.updateGeometry()
+        self.progress_bar.setValue(index)
+        self.rotation_displayed.emit(rotation)
+
+        self.scene.update()
+        QApplication.processEvents()  # Update UI
+
+        if not single_rotation:
+            # Save the figure as SVG with tight bounding box and zero padding in the last iteration
+            svg_filename = "output.svg"
+            fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+
+        time.sleep(0.1)  # Optional delay for better visualization
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         total_area = sum(obj.area() for obj in parsed_objects)

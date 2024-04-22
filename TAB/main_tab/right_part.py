@@ -23,6 +23,8 @@ from PyQt5.QtWidgets import QDialog
 import sqlite3
 from datetime import datetime
 import secrets
+from matplotlib.patches import Rectangle
+
 
 class ToolParametersDialog(QDialog):
     def __init__(self):
@@ -632,7 +634,7 @@ class RightPart(QWidget):
         global_explore_holes = explore_holes
         global_parallel = parallel
         global_optimization = optimization
-        global_accuracy = accuracy
+        global_accuracy = accuracy # niższa wartość -> wyższa dokładność
         global_rotations = rotations
         global_starting_point = starting_point
 
@@ -668,9 +670,11 @@ class RightPart(QWidget):
         return rotations
     def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
         transformed_points = []
+        cos_rot = np.cos(rotation)
+        sin_rot = np.sin(rotation)
         for point in points:
-            rotated_x = point[0] * math.cos(rotation) - point[1] * math.sin(rotation)
-            rotated_y = point[0] * math.sin(rotation) + point[1] * math.cos(rotation)
+            rotated_x = point[0] * cos_rot - point[1] * sin_rot
+            rotated_y = point[0] * sin_rot + point[1] * cos_rot
             transformed_points.append((rotated_x + trans_x, rotated_y + trans_y))
         return transformed_points
 
@@ -708,15 +712,10 @@ class RightPart(QWidget):
     
     
     def display_file(self, file_paths, width, height, checked_paths):
-        # Sprawdzenie, czy wszystkie wymagane parametry są skonfigurowane
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
-            msg.setText("Error: Not all nesting parameters are configured.")
-            msg.setInformativeText("Please configure all nesting parameters before calling the nesting function.")
-            msg.setWindowTitle("Error")
-            msg.exec_()
+            QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
             return
+
         self.progress_bar.setMaximum(global_rotations - 1)
         self.inputPoints = []
         file_to_parse = Parser(checked_paths)
@@ -733,15 +732,19 @@ class RightPart(QWidget):
 
         nfp_config = self.configure_nesting_parameters(rotations)
 
-
+        min_area = float('inf')
+        min_area_rotation = 0
+        min_area_index = -1
+        
         for index, rotation in enumerate(rotations):
-            if self.stop_requested:  # Sprawdzenie, czy zatrzymanie zostało zażądane
+            if self.stop_requested:
                 print("Nesting process stopped.")
                 self.stop_requested = False
-                break  # Wyjście z pętli, zatrzymanie procesu
+                break
+           
             nfp_config.rotations = [rotation]
             num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
-
+            self.progress_bar.setValue(index)
             fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
             ax = fig.add_subplot(111)
             ax.set_aspect('equal')
@@ -750,34 +753,53 @@ class RightPart(QWidget):
             ax.set_xticks([])
             ax.set_yticks([])
 
+            min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
+
             for i, item in enumerate(self.inputPoints):
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
 
+                x_points, y_points = [], []
                 for segment in parsed_path:
-                    x_points = []
-                    y_points = []
-                    for t in np.linspace(0, 1, num=100):
+                    for t in np.linspace(0, 1, num=80):
                         point = segment.point(t)
                         transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
                         x_points.append(transformed_point[0])
                         y_points.append(transformed_point[1])
-                    ax.plot(x_points, y_points, color='black', linewidth=1)
 
-            canvas = FigureCanvas(fig)
-            self.scene.addWidget(canvas)
-            canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            canvas.updateGeometry()
-            self.progress_bar.setValue(index)
-            self.rotation_displayed.emit(rotation)
-            print(f"Displaying rotation: {rotation:.2f} radians")
-            # Odświeżenie widoku
+                ax.plot(x_points, y_points, color='black', linewidth=1)
+                min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
+                min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
+
+            # Calculate the area of the bounding box
+            bounding_box_width = max_x - min_x
+            bounding_box_height = max_y - min_y
+            bounding_box_area = bounding_box_width * bounding_box_height
             
-            self.scene.update()
-            QApplication.processEvents()  # Aktualizacja interfejsu
-            svg_filename = "output.svg"
-            fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-            time.sleep(0.2)    # Wait for 1 second before the next rotation
+            if bounding_box_area < min_area:
+                min_area = bounding_box_area
+                min_area_rotation = rotation
+                min_area_index = index
+
+                # Draw the bounding box
+                ax.add_patch(Rectangle((min_x, min_y), bounding_box_width, bounding_box_height, linewidth=1, edgecolor='r', facecolor='none'))
+
+                # Display the canvas only if it's the smallest bounding box found so far
+                canvas = FigureCanvas(fig)
+                self.scene.addWidget(canvas)
+                canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                canvas.updateGeometry()
+                
+                self.rotation_displayed.emit(rotation)
+                print(f"Displaying rotation: {rotation:.2f} radians - New minimum area: {min_area:.2f} at Index {min_area_index}")
+                self.scene.update()
+                QApplication.processEvents()
+                svg_filename = "output.svg"
+                fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+                
+
+        if min_area_index != -1:  # Ensure there was at least one update
+            print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         total_area = sum(obj.area() for obj in parsed_objects)

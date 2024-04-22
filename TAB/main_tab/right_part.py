@@ -397,24 +397,55 @@ class CustomDialog(QDialog):
 
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
+    
     def __init__(self):
-        super().__init__()       
-        layout = QVBoxLayout()
+        super().__init__()
+        layout = QVBoxLayout()  # Layout to arrange widgets vertically
+
+        # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
         layout.addWidget(self.progress_bar)
+
+        # Graphics View
         self.graphics_view = QGraphicsView()
-        layout.addWidget(self.graphics_view)
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
+        layout.addWidget(self.graphics_view)
+
+        # Horizontal layout for buttons
+        button_layout = QHBoxLayout()  # Layout to arrange buttons horizontally
+
+        # 'Stop Nesting' Button
+        self.stop_nesting_button = QPushButton("Stop Nesting")
+        self.stop_nesting_button.clicked.connect(self.request_stop)
+        button_layout.addWidget(self.stop_nesting_button)
+
+        # 'Generuj G-code' Button
         self.open_tool_parameters_button = QPushButton("Generuj G-code")
         self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog_right)
-        layout.addWidget(self.open_tool_parameters_button)
-        self.setLayout(layout)
-        self.inputPoints = []
-        self.svg_to_mm = 0.352777778
-        self.volume = None  # Move initialization to display_file method
+        button_layout.addWidget(self.open_tool_parameters_button)
 
+        
+
+        # Add the button layout to the main vertical layout
+        layout.addLayout(button_layout)
+
+        # Set the layout for the widget
+        self.setLayout(layout)
+
+        # Initialization
+        self.inputPoints = []
+        self.svg_to_mm = 0.352777778  # Conversion factor from SVG units to mm
+        self.volume = None
+        self.stop_requested = False
+
+    
+    def request_stop(self):
+        self.stop_requested = True
+        print("Stop requested. The nesting process will be terminated after the current iteration.")
+    def stop_nesting(self):
+            self.nesting_process.request_stop()
     # metoda przyjmująca parametry narzędzia wybrane podczas konifguracji nestingu 
     def sended_tool_param(self, saved_parameters):
         
@@ -643,17 +674,49 @@ class RightPart(QWidget):
             transformed_points.append((rotated_x + trans_x, rotated_y + trans_y))
         return transformed_points
 
+
+    def configure_nesting_parameters(self, rotations):
+        nfp_config = NfpConfig()
+        # Sposób ułożenia obiektów
+        alignment_map = {
+            "CENTER": NfpConfig.Alignment.CENTER,
+            "BOTTOM_LEFT": NfpConfig.Alignment.BOTTOM_LEFT,
+            "BOTTOM_RIGHT": NfpConfig.Alignment.BOTTOM_RIGHT,
+            "TOP_LEFT": NfpConfig.Alignment.TOP_LEFT,
+            "TOP_RIGHT": NfpConfig.Alignment.TOP_RIGHT,
+            "DONT_ALIGN": NfpConfig.Alignment.DONT_ALIGN
+        }
+        nfp_config.alignment = alignment_map.get(global_optimization, NfpConfig.Alignment.DONT_ALIGN)
+        nfp_config.starting_point = alignment_map.get(global_starting_point, NfpConfig.Alignment.DONT_ALIGN)
+
+        # Obroty obiektów
+        if rotations is None or global_rotations == 0:
+            nfp_config.rotations = []
+        else:
+            nfp_config.rotations = rotations
+
+        # Dokładność
+        nfp_config.accuracy = global_accuracy
+
+        # Wielowątkowość
+        nfp_config.parallel = global_parallel
+
+        # Eksploracja otworów
+        nfp_config.explore_holes = global_explore_holes
+
+        return nfp_config
+    
+    
     def display_file(self, file_paths, width, height, checked_paths):
-        variables = [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]
-        for var in variables:
-            if var is None:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
-                msg.setText("Error: Not all nesting parameters are configured.")
-                msg.setInformativeText("Please configure all nesting parameters before calling the nesting function.")
-                msg.setWindowTitle("Error")
-                msg.exec_()
-                return
+        # Sprawdzenie, czy wszystkie wymagane parametry są skonfigurowane
+        if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("Error: Not all nesting parameters are configured.")
+            msg.setInformativeText("Please configure all nesting parameters before calling the nesting function.")
+            msg.setWindowTitle("Error")
+            msg.exec_()
+            return
         self.progress_bar.setMaximum(global_rotations - 1)
         self.inputPoints = []
         file_to_parse = Parser(checked_paths)
@@ -665,51 +728,17 @@ class RightPart(QWidget):
         if not self.check_fit_in_volume(self.inputPoints, width, height):
             return
 
-        # Parametry nestingu
-        nfp_config = NfpConfig()
-        # Sposob ulozenia obiektow
-        if global_optimization == "CENTER":
-            nfp_config.alignment = NfpConfig.Alignment.CENTER
-        elif global_optimization == "BOTTOM_LEFT":
-            nfp_config.alignment = NfpConfig.Alignment.BOTTOM_LEFT
-        elif global_optimization == "BOTTOM_RIGHT":
-            nfp_config.alignment = NfpConfig.Alignment.BOTTOM_RIGHT
-        elif global_optimization == "TOP_LEFT":
-            nfp_config.alignment = NfpConfig.Alignment.TOP_LEFT
-        elif global_optimization == "TOP_RIGHT":
-            nfp_config.alignment = NfpConfig.Alignment.TOP_RIGHT
-        elif global_optimization == "DONT_ALIGN":
-            nfp_config.alignment = NfpConfig.Alignment.DONT_ALIGN
-        #Punkt poczatkowy
-        if global_starting_point == "CENTER":
-            nfp_config.starting_point = NfpConfig.Alignment.CENTER
-        elif global_starting_point == "BOTTOM_LEFT":
-            nfp_config.starting_point = NfpConfig.Alignment.BOTTOM_LEFT
-        elif global_starting_point == "BOTTOM_RIGHT":
-            nfp_config.starting_point = NfpConfig.Alignment.BOTTOM_RIGHT
-        elif global_starting_point == "TOP_LEFT":
-            nfp_config.starting_point = NfpConfig.Alignment.TOP_LEFT
-        elif global_starting_point == "TOP_RIGHT":
-            nfp_config.starting_point = NfpConfig.Alignment.TOP_RIGHT
-        elif global_starting_point == "DONT_ALIGN":
-            nfp_config.starting_point = NfpConfig.Alignment.DONT_ALIGN
-        # Obroty obiektow
-        if global_rotations == 0:
-            nfp_config.rotations = []
-        elif global_rotations == 1:
-            nfp_config.rotations = [0]
-        else:
-            nfp_config.rotations = self.generate_rotations(global_rotations)
-        # Dokladnosc
-        nfp_config.accuracy = global_accuracy
-        # Wielowatkowosc
-        nfp_config.parallel = global_parallel
-        # Eksploracja otworow
-        nfp_config.explore_holes = global_explore_holes
-
         spacing = int(global_space_between_objects)
+        rotations = self.generate_rotations(global_rotations) if global_rotations > 0 else []
 
-        for index, rotation in enumerate(self.generate_rotations(global_rotations)):
+        nfp_config = self.configure_nesting_parameters(rotations)
+
+
+        for index, rotation in enumerate(rotations):
+            if self.stop_requested:  # Sprawdzenie, czy zatrzymanie zostało zażądane
+                print("Nesting process stopped.")
+                self.stop_requested = False
+                break  # Wyjście z pętli, zatrzymanie procesu
             nfp_config.rotations = [rotation]
             num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
 
@@ -746,7 +775,8 @@ class RightPart(QWidget):
             
             self.scene.update()
             QApplication.processEvents()  # Aktualizacja interfejsu
-
+            svg_filename = "output.svg"
+            fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
             time.sleep(0.2)    # Wait for 1 second before the next rotation
 
     def check_fit_in_volume(self, parsed_objects, width, height):

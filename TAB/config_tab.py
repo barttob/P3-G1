@@ -324,6 +324,11 @@ class ConfigTab(QWidget):
 
         label = QLabel("Prawa strona ustawień konfiguracyjnych")
         layout.addWidget(label)
+        # Automatyczne wczytanie domyślnej konfiguracji przy uruchomieniu
+        self.auto_load_default_configuration()
+        self.initialize_default_tool_parameters()
+        self.auto_save_parameters()
+        self.submit_value()
 
     def set_default_values(self):
         
@@ -768,3 +773,83 @@ class ConfigTab(QWidget):
         else:
             # Komunikat informacyjny w przypadku braku danych
             QMessageBox.information(self, "Błąd", "Wybierz konfigurację do wczytania.")
+
+    def auto_load_default_configuration(self):
+        # Połączenie z bazą danych
+        conn = sqlite3.connect('./db/database.db')
+        cursor = conn.cursor()
+
+        try:
+            # Zapytanie SQL, aby pobrać domyślną konfigurację z tabeli NestConfig
+            cursor.execute("SELECT * FROM NestConfig WHERE config_name = 'default_laser'")
+            default_config = cursor.fetchone()
+
+            if default_config:
+                # Pobranie wartości z rekordu
+                space = default_config[2]
+                alignment = default_config[3]
+                starting_point = default_config[4]
+                rotations = default_config[5]
+                accuracy = default_config[6]
+                explore_holes = default_config[7]
+                parallel = default_config[8]
+
+                # Ustawienie wartości w elementach interfejsu użytkownika
+                self.space_between_objects_lineedit.setText(str(space))
+                self.optimization_combobox.setCurrentText(alignment)
+                self.starting_point_combobox.setCurrentText(starting_point)
+                self.rotations_slider.setValue(rotations)
+                self.accuracy_lineedit.setText(str(accuracy))
+                self.explore_holes_checkbox.setChecked(bool(explore_holes))
+                self.parallel_checkbox.setChecked(bool(parallel))
+
+                # Wywołanie funkcji submit_value() aby zastosować te wartości
+                #self.submit_value()
+
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+
+        finally:
+            # Zamknięcie połączenia z bazą danych
+            conn.close()
+        
+        # self.submit_value()
+    
+    def initialize_default_tool_parameters(self):
+        # Domyślne wartości dla narzędzia "laser"
+        self.tool_parameters['laser'] = {
+            'type_tool': 'laser',
+            'cutting_speed': '103',  # Domyślna prędkość cięcia
+            'speed_movement': '10',  # Domyślna prędkość ruchu
+            'cutting_depth': '12',   # Domyślna głębokość cięcia
+            'downtime': '30',        # Domyślny czas przestoju
+            'unit': 'mm',            # Domyślna jednostka
+            'custom_header': 'M10',  # Domyślny nagłówek
+            'custom_footer': 'M24'   # Domyślna stopka
+        }
+    
+    def auto_save_parameters(self):
+        tool = self.tool_combobox.currentText()
+        current_tool_params = self.tool_parameters.get(tool)
+
+        if current_tool_params:
+            # Utwórz słownik dla zapisanych parametrów, włączając typ narzędzia
+            saved_params = {'type_tool': tool}
+
+            # Skopiuj domyślne wartości parametrów z self.tool_parameters
+            for param_name, param_value in current_tool_params.items():
+                saved_params[param_name] = param_value
+
+            self.saved_parameters = saved_params
+            print("Zapisane parametry:", self.saved_parameters)  # Wyświetlenie zapisanych parametrów w konsoli
+
+            # Utwórz listę narzędzi do usunięcia (opcjonalne)
+            # Jeśli nie chcesz usuwać innych narzędzi, można pominąć ten krok
+            tools_to_remove = []
+            for other_tool in list(self.tool_parameters.keys()):
+                if other_tool != tool:
+                    tools_to_remove.append(other_tool)
+
+            # Iteruj po liście narzędzi do usunięcia i usuń je ze słownika (opcjonalne)
+            for tool_to_remove in tools_to_remove:
+                self.tool_parameters.pop(tool_to_remove)

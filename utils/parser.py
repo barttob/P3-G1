@@ -54,9 +54,9 @@ class Parser():
                 self.extract_points_from_path(path)
                 # if self.is_convex(path):
                 #     vertices = self.remove_concave_vertices(path)
-                print(self.svg_points)
-                print(self.is_convex(self.svg_points))
-                print('retaa')
+                # print(self.svg_points)
+                # print(self.is_convex(self.svg_points))
+                # print('retaa')
                 while not self.is_convex(self.svg_points):
                 #     print('reta')
                     self.svg_points = self.remove_concave_vertices(self.svg_points)
@@ -76,7 +76,7 @@ class Parser():
                 self.inputPoints.append(item)
 
 
-        print('ret')
+        # print('ret')
         return (self.inputPoints, self.svg_path_send)
     
     def is_convex(self, vertices):

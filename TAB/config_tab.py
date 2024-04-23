@@ -477,7 +477,10 @@ class ConfigTab(QWidget):
                 'downtime': QLineEdit(),
                 'unit': QComboBox(),  # Dodaj QComboBox
                 'custom_header': QLineEdit(),
-                'custom_footer': QLineEdit()
+                'custom_footer': QLineEdit(),
+                'floating_height_cone': QLineEdit(),
+                'total_depth_of_cutting': QLineEdit(),
+                'depth_of_cutting_per_pass': QLineEdit()
             }
 
             # Dodaj elementy do QComboBox
@@ -492,6 +495,9 @@ class ConfigTab(QWidget):
             form_layout.addRow("Jednostka:", self.tool_parameters['stożek']['unit'])
             form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['stożek']['custom_header'])
             form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['stożek']['custom_footer'])
+            form_layout.addRow("Wysokość dryfu dla frezu:", self.tool_parameters['stożek']['floating_height_cone'])
+            form_layout.addRow("Całkowita głębokość skrawania:", self.tool_parameters['stożek']['total_depth_of_cutting'])
+            form_layout.addRow("Głębokość skrawania na przejście:", self.tool_parameters['stożek']['depth_of_cutting_per_pass'])
 
             # Set default values for all parameters
             default_button = QPushButton("Ustaw domyślne")
@@ -545,6 +551,10 @@ class ConfigTab(QWidget):
             self.tool_parameters['stożek']['unit'].setCurrentIndex(0)
             self.tool_parameters['stożek']['custom_header'].setText("M10")
             self.tool_parameters['stożek']['custom_footer'].setText("M24")
+
+            self.tool_parameters['stożek']['floating_height_cone'].setText("5")
+            self.tool_parameters['stożek']['total_depth_of_cutting'].setText("10")
+            self.tool_parameters['stożek']['depth_of_cutting_per_pass'].setText("2")
 
     def save_parameters(self):
         tool = self.tool_combobox.currentText()

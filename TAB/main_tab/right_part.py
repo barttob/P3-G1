@@ -135,6 +135,26 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.cone_speed_label)
         self.layout.addWidget(self.cone_speed_edit)
 
+        self.floating_height_cone_label = QLabel("Czas dryfu dla frezu:")
+        self.floating_height_cone_edit = QLineEdit()
+        self.layout.addWidget(self.floating_height_cone_label)
+        self.layout.addWidget(self.floating_height_cone_edit)
+
+        self.total_depth_of_cutting_label = QLabel("Total depth of cutting pl:")
+        self.total_depth_of_cutting_edit = QLineEdit()
+        self.layout.addWidget(self.total_depth_of_cutting_label)
+        self.layout.addWidget(self.total_depth_of_cutting_edit)
+
+        self.depth_of_cutting_per_pass_label = QLabel("Depth of cutting per pass speed pl:")
+        self.depth_of_cutting_per_pass_edit = QLineEdit()
+        self.layout.addWidget(self.depth_of_cutting_per_pass_label)
+        self.layout.addWidget(self.depth_of_cutting_per_pass_edit)
+
+        
+
+
+
+
         # Button to confirm tool parameters
         self.confirm_button = QPushButton("Generuj")
         self.confirm_button.clicked.connect(self.accept)
@@ -280,6 +300,19 @@ class ToolParametersDialog(QDialog):
             self.footer_label.setVisible(True)
             self.footer_edit.setVisible(True)
             self.footer_edit.setText(global_saved_parameters['custom_footer'])
+
+            self.floating_height_cone_label.setVisible(True)
+            self.floating_height_cone_edit.setVisible(True)
+            self.floating_height_cone_label.setText(global_saved_parameters['floating_height_cone'])
+
+
+            self.total_depth_of_cutting_label.setVisible(True)
+            self.total_depth_of_cutting_edit.setVisible(True)
+            self.total_depth_of_cutting_edit.setText(global_saved_parameters['total_depth_of_cutting'])
+            self.depth_of_cutting_per_pass_label.setVisible(True)
+            self.depth_of_cutting_per_pass_edit.setVisible(True)
+            self.depth_of_cutting_per_pass_edit.setText(global_saved_parameters['depth_of_cutting_per_pass'])
+
             self.plasma_power_label.setVisible(False)
             self.plasma_power_edit.setVisible(False)
             self.plasma_speed_label.setVisible(False)
@@ -288,6 +321,18 @@ class ToolParametersDialog(QDialog):
             self.cone_power_edit.setVisible(False)
             self.cone_speed_label.setVisible(False)
             self.cone_speed_edit.setVisible(False)
+            self.probing_depth_label.setVisible(False)
+            self.probing_depth_edit.setVisible(False)
+            self.cutting_height_label.setVisible(False)
+            self.cutting_height_edit.setVisible(False)
+            self.piercing_height_label.setVisible(False)
+            self.piercing_height_edit.setVisible(False)
+            self.piercing_time_label.setVisible(False)
+            self.piercing_time_edit.setVisible(False)
+            self.floating_height_label.setVisible(False)
+            self.floating_height_edit.setVisible(False)
+            
+            
 
 
 
@@ -623,8 +668,133 @@ class RightPart(QWidget):
                 # Odczytaj wygenerowany G-kod
                 generated_gcode = gcode_compiler.compile()
 
+
+                # Pobierz parametry narzędzia od użytkownika potrzebne do modyfikacji G kodu dla narzędzia stożek ---- poniżej jeszcze puste
+                
+
+
+                def remove_duplicate_lines(generated_gcode):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    previous_line = None
+                    for line in lines:
+                        if line == previous_line:
+                            continue  # Pomijaj linie, które są identyczne z poprzednią
+                        modified_lines.append(line)
+                        previous_line = line
+
+                    return '\n'.join(modified_lines)
+                
+                
+                modified_gcode = remove_duplicate_lines(generated_gcode)
+
+
+
+
+                def duplicate_lines_between_m3_and_g4(generated_gcode, duplicates=1):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    is_between_m3_and_g4 = False
+                    lines_to_duplicate = []
+
+                    for line in lines:
+                        if 'M3 S255' in line:
+                            is_between_m3_and_g4 = True
+                            lines_to_duplicate.clear()  # Wyczyść listę linii do zduplikowania
+                        elif 'G4 P29.0' in line:
+                            is_between_m3_and_g4 = False
+                            # Zduplikuj linie między "M3 S255" a "G4 P29.0"
+                            for _ in range(duplicates):
+                                for duplicate_line in lines_to_duplicate:
+                                    modified_lines.append(duplicate_line)
+                        elif is_between_m3_and_g4:
+                            lines_to_duplicate.append(line)
+
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+                # Użycie:
+                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, duplicates=4) #duplicates to głębokość wiercenia
+                
+
+
+
+
+                def add_custom_command(generated_gcode):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    is_between_m3_and_m5 = False
+
+                    for line in lines:
+                        if 'M3 S255' in line:
+                            is_between_m3_and_m5 = True
+                            modified_lines.append(line)  # Dodaj linię "M3 S255" do wynikowego kodu
+                        elif 'M5' in line:
+                            is_between_m3_and_m5 = False
+                            modified_lines.append(line)  # Dodaj linię "M5" do wynikowego kodu
+                        elif is_between_m3_and_m5 and line.startswith('G1 F'):
+                            modified_lines.append('G0 Z-250')  # Dodaj linię "G0 Z-250" przed linią "G1 F"
+                            modified_lines.append(line)
+                        else:
+                            modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+                # Użycie:
+                modified_gcode3 = add_custom_command(modified_gcode2)
+
+
+                def decrement_custom_command(generated_gcode, decrement_step=1):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    is_between_m3_and_m5 = False
+                    z_counter = decrement_step  # Inicjalizuj licznik Z
+
+                    for line in lines:
+                        if 'M3 S255' in line:
+                            is_between_m3_and_m5 = True
+                            modified_lines.append(line)  # Dodaj linię "M3 S255" do wynikowego kodu
+                        elif 'M5' in line:
+                            is_between_m3_and_m5 = False
+                            modified_lines.append(line)  # Dodaj linię "M5" do wynikowego kodu
+                            z_counter = decrement_step  # Zresetuj licznik po zakończeniu sekcji między "M3 S255" a "M5"
+                        elif is_between_m3_and_m5 and 'G0 Z-250' in line:  # Możesz dostosować ten warunek do Twoich potrzeb
+                            modified_lines.append(f'G0 Z-{z_counter}')
+                            z_counter += decrement_step
+                        else:
+                            modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+                # Użycie:
+                modified_gcode4 = decrement_custom_command(modified_gcode3, decrement_step=2) #decrement_step do co ile ma się obniżać  frez
+
+
+
+                def add_z_reset(generated_gcode):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for line in lines:
+                        modified_lines.append(line)
+                        if 'M5' in line:
+                            modified_lines.append('G0 Z5') # G0 Z{} to wysokość dryfu dla frezu
+
+                    return '\n'.join(modified_lines)
+
+                # Użycie:
+                modified_gcode5 = add_z_reset(modified_gcode4)
+
+
+
+    
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(generated_gcode)
+                custom_dialog.set_generated_gcode(modified_gcode5)
 
                 custom_dialog.exec_()
 

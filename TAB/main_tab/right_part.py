@@ -409,12 +409,18 @@ class RightPart(QWidget):
         self.progress_bar.setMinimum(0)
         layout.addWidget(self.progress_bar)
 
+         # ComboBox for layer selection
+        self.layerComboBox = QComboBox()
+        self.layerComboBox.currentIndexChanged.connect(self.display_selected_layer)
+        layout.addWidget(self.layerComboBox)  # Add ComboBox right after ProgressBar
+
+
         # Graphics View
         self.graphics_view = QGraphicsView()
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
         layout.addWidget(self.graphics_view)
-
+        
         # Horizontal layout for buttons
         button_layout = QHBoxLayout()  # Layout to arrange buttons horizontally
 
@@ -710,7 +716,11 @@ class RightPart(QWidget):
 
         return nfp_config
     
-    
+    def display_selected_layer(self, index):
+        # Funkcja do wyświetlania wybranej warstwy
+        for i, canvas in enumerate(self.canvas_layers):
+            canvas.setVisible(i == index)   
+
     def display_file(self, file_paths, width, height, checked_paths):
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
             QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
@@ -723,6 +733,8 @@ class RightPart(QWidget):
         returned_input_points, returned_svg_points = returned_values
         self.inputPoints += returned_input_points
         self.volume = Box(width, height)
+        self.canvas_layers = []
+        self.layerComboBox.clear()
 
         if not self.check_fit_in_volume(self.inputPoints, width, height):
             return
@@ -786,20 +798,23 @@ class RightPart(QWidget):
 
                 # Display the canvas only if it's the smallest bounding box found so far
                 canvas = FigureCanvas(fig)
+                #canvas.setVisible(False)  # Domyślnie niewidoczne
                 self.scene.addWidget(canvas)
                 canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                canvas.updateGeometry()
-                
-                self.rotation_displayed.emit(rotation)
-                print(f"Displaying rotation: {rotation:.2f} radians - New minimum area: {min_area:.2f} at Index {min_area_index}")
+                self.canvas_layers.append(canvas)
+                self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
+
+                # Update the scene and UI
                 self.scene.update()
                 QApplication.processEvents()
+
+                # Zapisz SVG
                 svg_filename = "output.svg"
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-                
 
-        if min_area_index != -1:  # Ensure there was at least one update
+        if min_area_index != -1:
             print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")
+            #self.layerComboBox.setCurrentIndex(min_area_index)
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         total_area = sum(obj.area() for obj in parsed_objects)

@@ -140,12 +140,12 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.floating_height_cone_label)
         self.layout.addWidget(self.floating_height_cone_edit)
 
-        self.total_depth_of_cutting_label = QLabel("Total depth of cutting pl:")
+        self.total_depth_of_cutting_label = QLabel("Całkowita głębokość skrawania:")
         self.total_depth_of_cutting_edit = QLineEdit()
         self.layout.addWidget(self.total_depth_of_cutting_label)
         self.layout.addWidget(self.total_depth_of_cutting_edit)
 
-        self.depth_of_cutting_per_pass_label = QLabel("Depth of cutting per pass speed pl:")
+        self.depth_of_cutting_per_pass_label = QLabel("Głębokość skrawania na przejście:")
         self.depth_of_cutting_per_pass_edit = QLineEdit()
         self.layout.addWidget(self.depth_of_cutting_per_pass_label)
         self.layout.addWidget(self.depth_of_cutting_per_pass_edit)
@@ -214,6 +214,22 @@ class ToolParametersDialog(QDialog):
             self.cone_power_edit.setVisible(False)
             self.cone_speed_label.setVisible(False)
             self.cone_speed_edit.setVisible(False)
+            self.probing_depth_label.setVisible(False)
+            self.probing_depth_edit.setVisible(False)
+            self.cutting_height_label.setVisible(False)
+            self.cutting_height_edit.setVisible(False)
+            self.piercing_height_label.setVisible(False)
+            self.piercing_height_edit.setVisible(False)
+            self.piercing_time_label.setVisible(False)
+            self.piercing_time_edit.setVisible(False)
+            self.floating_height_label.setVisible(False)
+            self.floating_height_edit.setVisible(False)
+            self.floating_height_cone_label.setVisible(False)
+            self.floating_height_cone_edit.setVisible(False)
+            self.total_depth_of_cutting_label.setVisible(False)
+            self.total_depth_of_cutting_edit.setVisible(False)
+            self.depth_of_cutting_per_pass_label.setVisible(False)
+            self.depth_of_cutting_per_pass_edit.setVisible(False)
 
         elif current_tool == "plazma":
             #self.plasma_power_label.setVisible(True)
@@ -269,7 +285,13 @@ class ToolParametersDialog(QDialog):
             self.floating_height_label.setVisible(True)
             self.floating_height_edit.setVisible(True)
             self.floating_height_edit.setText(global_saved_parameters['floating_height'])
-            
+
+            self.floating_height_cone_label.setVisible(False)
+            self.floating_height_cone_edit.setVisible(False)
+            self.total_depth_of_cutting_label.setVisible(False)
+            self.total_depth_of_cutting_edit.setVisible(False)
+            self.depth_of_cutting_per_pass_label.setVisible(False)
+            self.depth_of_cutting_per_pass_edit.setVisible(False)
 
         elif current_tool == "stożek":
             #self.cone_power_label.setVisible(True)
@@ -301,11 +323,11 @@ class ToolParametersDialog(QDialog):
             self.footer_edit.setVisible(True)
             self.footer_edit.setText(global_saved_parameters['custom_footer'])
 
+            
+
             self.floating_height_cone_label.setVisible(True)
             self.floating_height_cone_edit.setVisible(True)
-            self.floating_height_cone_label.setText(global_saved_parameters['floating_height_cone'])
-
-
+            self.floating_height_cone_edit.setText(global_saved_parameters['floating_height_cone'])
             self.total_depth_of_cutting_label.setVisible(True)
             self.total_depth_of_cutting_edit.setVisible(True)
             self.total_depth_of_cutting_edit.setText(global_saved_parameters['total_depth_of_cutting'])
@@ -670,7 +692,20 @@ class RightPart(QWidget):
 
 
                 # Pobierz parametry narzędzia od użytkownika potrzebne do modyfikacji G kodu dla narzędzia stożek ---- poniżej jeszcze puste
-                
+            
+                #to wysokość dryfu dla frezu                    floating_height_cone
+                #głębokość wiercenia                            total_depth_of_cutting
+                #decrement_step do co ile ma się obniżać  frez  depth_of_cutting_per_pass
+
+                floating_height_cone = dialog.floating_height_cone_edit.text()
+                floating_height_cone_int = int(floating_height_cone)
+
+                total_depth_of_cutting = dialog.total_depth_of_cutting_edit.text()
+                total_depth_of_cutting_int = int(total_depth_of_cutting)
+
+                depth_of_cutting_per_pass = dialog.depth_of_cutting_per_pass_edit.text()
+                depth_of_cutting_per_pass_int = int(depth_of_cutting_per_pass)
+
 
 
                 def remove_duplicate_lines(generated_gcode):
@@ -717,7 +752,7 @@ class RightPart(QWidget):
                     return '\n'.join(modified_lines)
 
                 # Użycie:
-                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, duplicates=4) #duplicates to głębokość wiercenia
+                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, total_depth_of_cutting_int) #duplicates to głębokość wiercenia
                 
 
 
@@ -772,7 +807,7 @@ class RightPart(QWidget):
                     return '\n'.join(modified_lines)
 
                 # Użycie:
-                modified_gcode4 = decrement_custom_command(modified_gcode3, decrement_step=2) #decrement_step do co ile ma się obniżać  frez
+                modified_gcode4 = decrement_custom_command(modified_gcode3, depth_of_cutting_per_pass_int) #decrement_step do co ile ma się obniżać  frez
 
 
 
@@ -783,7 +818,7 @@ class RightPart(QWidget):
                     for line in lines:
                         modified_lines.append(line)
                         if 'M5' in line:
-                            modified_lines.append('G0 Z5') # G0 Z{} to wysokość dryfu dla frezu
+                            modified_lines.append(f'G0 Z{floating_height_cone_int}') # G0 Z{} to wysokość dryfu dla frezu
 
                     return '\n'.join(modified_lines)
 

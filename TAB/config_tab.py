@@ -506,14 +506,83 @@ class ConfigTab(QWidget):
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.close_window)
-        button_box.accepted.connect(self.save_parameters) 
-        button_box.rejected.connect(self.dialog.reject)        
+        button_box.accepted.connect(lambda: self.validate_parameters(tool))
+        button_box.rejected.connect(self.dialog.reject)            
 
         form_layout.addRow(button_box)
 
         if self.dialog.exec_():
             # Do something with the parameters entered in the dialog
             pass
+
+
+    
+    def validate_parameters(self, tool):
+        # Tutaj możesz umieścić kod walidacji
+        if tool == "plazma":
+            plazma_params = self.tool_parameters['plazma']
+            for param_name, param_widget in plazma_params.items():
+                if isinstance(param_widget, QLineEdit):
+                    text = param_widget.text()
+                    if param_name in ['cutting_speed', 'speed_movement', 'cutting_depth', 'probing_depth', 'downtime', 'cutting_height', 'piercing_height', 'piercing_time', 'floating_height']:
+                        if not text:
+                            QMessageBox.warning(self.dialog, "Błąd", f"Pole {param_name} jest puste.")
+                            self.open_tool_parameters_dialog()  # Wywołanie funkcji open_tool_parameters_dialog w przypadku wykrycia błędu
+                            return 1  # Zwraca 1 w przypadku wykrycia błędu
+                        # Sprawdzanie, czy wartość jest liczbą
+                        try:
+                            float_value = float(text)
+                        except ValueError:
+                            QMessageBox.warning(self.dialog, "Błąd", f"Pole {param_name} powinno zawierać liczbę.")
+                            self.open_tool_parameters_dialog()  # Wywołanie funkcji open_tool_parameters_dialog w przypadku wykrycia błędu
+                            return 1  # Zwraca 1 w przypadku wykrycia błędu
+
+        elif tool == "laser":
+            laser_params = self.tool_parameters['laser']
+            for param_name, param_widget in laser_params.items():
+                if isinstance(param_widget, QLineEdit):
+                    text = param_widget.text()
+                    if param_name in ['cutting_speed', 'speed_movement', 'cutting_depth', 'downtime']:
+                        if not text:
+                            QMessageBox.warning(self.dialog, "Błąd", f"Pole {param_name} jest puste.")
+                            self.open_tool_parameters_dialog()  # Wywołanie funkcji open_tool_parameters_dialog w przypadku wykrycia błędu
+                            return 1  # Zwraca 1 w przypadku wykrycia błędu
+                        # Sprawdzanie, czy wartość jest liczbą
+                        try:
+                            float_value = float(text)
+                        except ValueError:
+                            QMessageBox.warning(self.dialog, "Błąd", f"Pole {param_name} powinno zawierać liczbę.")
+                            self.open_tool_parameters_dialog()  # Wywołanie funkcji open_tool_parameters_dialog w przypadku wykrycia błędu
+                            return 1  # Zwraca 1 w przypadku wykrycia błędu 
+        
+        elif tool == "stożek":
+            milling_cutter_params = self.tool_parameters['stożek']
+            for param_name, param_widget in milling_cutter_params.items():
+                if isinstance(param_widget, QLineEdit):
+                    text = param_widget.text()
+                    if param_name in ['cutting_speed', 'speed_movement', 'cutting_depth', 'downtime', 'floating_height_cone', 'total_depth_of_cutting', 'depth_of_cutting_per_pass']:
+                        if not text:
+                            QMessageBox.warning(self.dialog, "Błąd", f"Pole {param_name} jest puste.")
+                            self.open_tool_parameters_dialog()  # Wywołanie funkcji open_tool_parameters_dialog w przypadku wykrycia błędu
+                            return 1  # Zwraca 1 w przypadku wykrycia błędu
+                        # Sprawdzanie, czy wartość jest liczbą
+                        try:
+                            float_value = float(text)
+                        except ValueError:
+                            QMessageBox.warning(self.dialog, "Błąd", f"Pole {param_name} powinno zawierać liczbę.")
+                            self.open_tool_parameters_dialog()  # Wywołanie funkcji open_tool_parameters_dialog w przypadku wykrycia błędu
+                            return 1  # Zwraca 1 w przypadku wykrycia błędu
+
+        # Jeśli walidacja przebiegła pomyślnie, uruchom funkcję save_parameters
+        self.save_parameters()
+        return 0  # Zwraca 0 w przypadku braku błędów
+
+
+
+
+
+
+
 
     def set_default_values_for_tools(self, tool):
 

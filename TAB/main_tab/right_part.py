@@ -26,6 +26,7 @@ import secrets
 from matplotlib.patches import Rectangle
 
 
+
 class ToolParametersDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -1022,15 +1023,26 @@ class RightPart(QWidget):
             #self.layerComboBox.setCurrentIndex(min_area_index)
 
     def check_fit_in_volume(self, parsed_objects, width, height):
-        total_area = sum(obj.area() for obj in parsed_objects)
-        print("Suma powierzchni obiektów:", -total_area) 
+        global global_space_between_objects
+
+        # Powiększ każdy obiekt o zadany bufor
+        for item in parsed_objects:
+            item.inflation(int(global_space_between_objects * 2))
+        
+        # Sumuj powierzchnie powiększonych obiektów
+        total_required_area = sum(item.area() for item in parsed_objects)
+        
+        # Całkowita dostępna powierzchnia
         volume_area = width * height
-        if -total_area > volume_area:
-            min_area = -total_area - volume_area
+        print("volume area:", volume_area)
+        print("suma obiektów + powierzchnia między obiektami", total_required_area)
+        
+        # Sprawdź, czy wymagana powierzchnia nie przekracza dostępnej
+        if total_required_area > volume_area:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Critical)
             msg.setText("<font size='+2' color='red'>Błąd: Brak wystarczającej przestrzeni dla wszystkich obiektów.</font>")
-            msg.setInformativeText(f"Minimalna wymagana powierzchnia: {min_area} jednostek kwadratowych.\n\n"
+            msg.setInformativeText(f"Minimalna wymagana powierzchnia: {total_required_area} jednostek kwadratowych.\n\n"
                                     "Suma powierzchni obiektów przekracza dostępną objętość. Proszę dostosować wymiary lub zmniejszyć liczbę obiektów.")
             msg.setWindowTitle("Błąd")
             msg.setStyleSheet("QMessageBox { background-color: white; }")
@@ -1038,9 +1050,11 @@ class RightPart(QWidget):
             return False
         else:
             print("Powierzchnie poszczególnych obiektów:")
-            for i, obj in enumerate(parsed_objects):
-                print(f"Obiekt {i + 1}: {obj.area()}")
-        return True
+            for i, item in enumerate(parsed_objects):
+                print(f"Obiekt {i + 1}: {item.area()}")  # Wyświetlanie powierzchni każdego obiektu
+            return True
+
+
     
     def generate_gcode(self):
         # Open the tool parameters dialog

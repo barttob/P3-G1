@@ -515,6 +515,7 @@ class RightPart(QWidget):
         self.svg_to_mm = 0.352777778  # Conversion factor from SVG units to mm
         self.volume = None
         self.stop_requested = False
+        self.figures = []
 
     
     def request_stop(self):
@@ -971,7 +972,14 @@ class RightPart(QWidget):
     def display_selected_layer(self, index):
         # Funkcja do wyświetlania wybranej warstwy
         for i, canvas in enumerate(self.canvas_layers):
-            canvas.setVisible(i == index)   
+            canvas.setVisible(i == index)  # Ustaw widoczność odpowiedniej warstwy
+
+        # Sprawdź, czy index jest w zakresie i zapisz obiekt Figure do pliku SVG
+        if 0 <= index < len(self.figures):
+            fig = self.figures[index]
+            svg_filename = "output.svg"  # Stała nazwa pliku
+            fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+            print(f"SVG version '{index + 1}' saved as '{svg_filename}'.")  
 
     def display_file(self, file_paths, width, height, checked_paths):
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
@@ -1045,7 +1053,7 @@ class RightPart(QWidget):
             bounding_box_height = max_y - min_y
             bounding_box_area = bounding_box_width * bounding_box_height
             
-            if bounding_box_area < min_area * 0.99:
+            if bounding_box_area < min_area: #* 0.99:
                 min_area = bounding_box_area
                 self.best_configurations.append((rotation, bounding_box_area, index))
                 min_area_rotation = rotation
@@ -1063,7 +1071,7 @@ class RightPart(QWidget):
                 canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                 self.canvas_layers.append(canvas)
                 #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
-
+                self.figures.append(fig)
                 # Update the scene and UI
                 self.scene.update()
                 QApplication.processEvents()
@@ -1077,20 +1085,19 @@ class RightPart(QWidget):
             
 
     def update_combobox_with_best_configurations(self):
-        # Sortuj wyniki według obszaru, od najmniejszego do największego
+        # Sortowanie wyników według area od najmniejszej do największej
         self.best_configurations.sort(key=lambda x: x[1])
-        self.layerComboBox.clear()
+        #self.layerComboBox.clear()
 
-        version_number = 1  # Startujemy numerację wersji od 1
-        for rotation, area, index in self.best_configurations:
-            description = f"Version {version_number}: Area {area:.2f} mm²"
+        for i, (rotation, area, index) in enumerate(self.best_configurations):
+            description = f"Version {i+1}"
             self.layerComboBox.addItem(description, userData=index)
-            version_number += 1  # Zwiększ numer wersji dla każdego wpisu
 
-        # Ustaw ComboBox na najlepszą konfigurację
+        # Ustawienie najlepszej wersji jako domyślnej (najmniejsza area)
         if self.best_configurations:
             self.layerComboBox.setCurrentIndex(0)
-            self.display_selected_layer(self.best_configurations[0][2])
+            self.display_selected_layer(0)
+
 
 
     def check_fit_in_volume(self, parsed_objects, width, height):

@@ -924,7 +924,7 @@ class RightPart(QWidget):
         rotations = [i * angle_step for i in range(num_rotations)]
         # Wyświetl listę obrotów w terminalu
         rotations_text = ", ".join([f"{rot:.2f}" for rot in rotations])
-        print(f"Wygenerowane obroty: [{rotations_text}] rad")
+       # print(f"Wygenerowane obroty: [{rotations_text}] rad")
         return rotations
     def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
         transformed_points = []
@@ -1077,7 +1077,7 @@ class RightPart(QWidget):
         
         # Sumuj powierzchnie powiększonych obiektów
         total_required_area = sum(item.area() for item in parsed_objects)
-        
+        total_required_area += 48000000
         # Całkowita dostępna powierzchnia
         volume_area = width * height
         print("volume area:", volume_area)

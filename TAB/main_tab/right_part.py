@@ -707,6 +707,9 @@ class RightPart(QWidget):
                 depth_of_cutting_per_pass = dialog.depth_of_cutting_per_pass_edit.text()
                 depth_of_cutting_per_pass_int = int(depth_of_cutting_per_pass)
 
+                quantity_of_copies_line_int = total_depth_of_cutting_int // depth_of_cutting_per_pass_int
+                if total_depth_of_cutting_int % depth_of_cutting_per_pass_int != 0:
+                    quantity_of_copies_line_int += 1
 
 
                 def remove_duplicate_lines(generated_gcode):
@@ -753,9 +756,9 @@ class RightPart(QWidget):
                     return '\n'.join(modified_lines)
 
                 # Użycie:
-                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, total_depth_of_cutting_int) #duplicates to głębokość wiercenia
+                #modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, #total_depth_of_cutting_int-1) #duplicates to głębokość wiercenia
                 
-
+                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, quantity_of_copies_line_int-1) #duplicates to głębokość wiercenia
 
 
 
@@ -827,10 +830,53 @@ class RightPart(QWidget):
                 modified_gcode5 = add_z_reset(modified_gcode4)
 
 
+                def replace_z_value(g_code, new_z_value=-100):
+                    new_g_code = []
+                    min_z = None
+                    # Znajdź wszystkie wartości Z i zaktualizuj najniższą wartość Z
+                    for line in g_code.split('\n'):
+                        if line.startswith('G0') or line.startswith('G1'):
+                            if 'Z' in line:
+                                parts = line.split('Z')
+                                for part in parts[1:]:
+                                    z_value_str = part.split()[0]
+                                    if z_value_str:  # Sprawdź, czy znaleziono wartość Z
+                                        z_value = float(z_value_str)
+                                        if min_z is None or z_value < min_z:
+                                            min_z = z_value
+                    
+                    # Zastąp najniższą wartość Z wartością new_z_value
+                    for line in g_code.split('\n'):
+                        if line.startswith('G0') or line.startswith('G1'):
+                            if 'Z' in line:
+                                parts = line.split('Z')
+                                new_line = parts[0]
+                                for part in parts[1:]:
+                                    z_value_str = part.split()[0]
+                                    if z_value_str:  # Sprawdź, czy znaleziono wartość Z
+                                        z_value = float(z_value_str)
+                                        if z_value == min_z:
+                                            new_line += f'Z{new_z_value*-1}' + part[len(z_value_str):]
+                                        else:
+                                            new_line += 'Z' + z_value_str + part[len(z_value_str):]
+                                new_g_code.append(new_line)
+                            else:
+                                new_g_code.append(line)
+                        else:
+                            new_g_code.append(line)
+                    
+                    return '\n'.join(new_g_code)
+
+                # Przykładowe użycie
+                modified_gcode6 = replace_z_value(modified_gcode5, total_depth_of_cutting_int)
+                print(modified_gcode6)
+
+
+
 
     
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(modified_gcode5)
+                custom_dialog.set_generated_gcode(modified_gcode6)
 
                 custom_dialog.exec_()
 

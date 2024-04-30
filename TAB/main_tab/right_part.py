@@ -987,6 +987,9 @@ class RightPart(QWidget):
         self.volume = Box(width, height)
         self.canvas_layers = []
         self.layerComboBox.clear()
+        self.best_configurations = []  # Lista do przechowywania najlepszych konfiguracji
+
+        min_area = float('inf')
 
         if not self.check_fit_in_volume(self.inputPoints, width, height):
             return
@@ -1019,6 +1022,8 @@ class RightPart(QWidget):
 
             min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
 
+            best_area = float('inf')
+
             for i, item in enumerate(self.inputPoints):
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
@@ -1040,10 +1045,13 @@ class RightPart(QWidget):
             bounding_box_height = max_y - min_y
             bounding_box_area = bounding_box_width * bounding_box_height
             
-            if bounding_box_area < min_area:
+            if bounding_box_area < min_area * 0.99:
                 min_area = bounding_box_area
+                self.best_configurations.append((rotation, bounding_box_area, index))
                 min_area_rotation = rotation
                 min_area_index = index
+
+
 
                 # Draw the bounding box
                 ax.add_patch(Rectangle((min_x, min_y), bounding_box_width, bounding_box_height, linewidth=1, edgecolor='r', facecolor='none'))
@@ -1054,7 +1062,7 @@ class RightPart(QWidget):
                 self.scene.addWidget(canvas)
                 canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                 self.canvas_layers.append(canvas)
-                self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
+                #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
 
                 # Update the scene and UI
                 self.scene.update()
@@ -1063,10 +1071,27 @@ class RightPart(QWidget):
                 # Zapisz SVG
                 svg_filename = "output.svg"
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-
+        self.update_combobox_with_best_configurations()
         if min_area_index != -1:
             print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")
-            #self.layerComboBox.setCurrentIndex(min_area_index)
+            
+
+    def update_combobox_with_best_configurations(self):
+        # Sortuj wyniki według obszaru, od najmniejszego do największego
+        self.best_configurations.sort(key=lambda x: x[1])
+        self.layerComboBox.clear()
+
+        version_number = 1  # Startujemy numerację wersji od 1
+        for rotation, area, index in self.best_configurations:
+            description = f"Version {version_number}: Area {area:.2f} mm²"
+            self.layerComboBox.addItem(description, userData=index)
+            version_number += 1  # Zwiększ numer wersji dla każdego wpisu
+
+        # Ustaw ComboBox na najlepszą konfigurację
+        if self.best_configurations:
+            self.layerComboBox.setCurrentIndex(0)
+            self.display_selected_layer(self.best_configurations[0][2])
+
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         global global_space_between_objects

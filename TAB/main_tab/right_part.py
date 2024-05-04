@@ -570,8 +570,47 @@ class RightPart(QWidget):
                 # Odczytaj wygenerowany G-kod
                 generated_gcode = gcode_compiler.compile()
 
+
+
+
+                def remove_lines_range(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for i, line in enumerate(lines, start=1):
+                        if start_line <= i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode1 = remove_lines_range(generated_gcode, 6, 26)
+
+
+                def remove_lines_range_reverse(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    total_lines = len(lines)
+                    modified_lines = []
+
+                    for i in range(total_lines - 1, -1, -1):
+                        if start_line <= total_lines - i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.insert(0, lines[i])
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode2 = remove_lines_range_reverse(modified_gcode1, 2, 18)
+
+
+
+
+
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(generated_gcode)
+                custom_dialog.set_generated_gcode(modified_gcode2)
 
                 custom_dialog.exec_()
 
@@ -648,11 +687,42 @@ class RightPart(QWidget):
                 generated_gcode = '\n'.join(modified_lines)
 
 
+                def remove_lines_range(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for i, line in enumerate(lines, start=1):
+                        if start_line <= i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode1 = remove_lines_range(generated_gcode, 6, 46)
+
+
+                def remove_lines_range_reverse(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    total_lines = len(lines)
+                    modified_lines = []
+
+                    for i in range(total_lines - 1, -1, -1):
+                        if start_line <= total_lines - i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.insert(0, lines[i])
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode2 = remove_lines_range_reverse(modified_gcode1, 2, 57)
 
 
 
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(generated_gcode)
+                custom_dialog.set_generated_gcode(modified_gcode2)
 
                 custom_dialog.exec_()
 
@@ -874,10 +944,53 @@ class RightPart(QWidget):
 
 
 
+                # zmienne do ilości usuwanych linii
+                to_line = 29 + (quantity_of_copies_line_int - 1) * 14
+                print("To jest linia to_line:", to_line)
+
+                def remove_lines_range(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for i, line in enumerate(lines, start=1):
+                        if start_line <= i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode7 = remove_lines_range(modified_gcode6, 6, to_line)
+
+
+                # zmienne do ilości usuwanych linii reverse
+                to_line_reverse = 25 + (quantity_of_copies_line_int - 1) * 6
+                print("To jest linia to_line:", to_line)
+
+                def remove_lines_range_reverse(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    total_lines = len(lines)
+                    modified_lines = []
+
+                    for i in range(total_lines - 1, -1, -1):
+                        if start_line <= total_lines - i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.insert(0, lines[i])
+
+                    return '\n'.join(modified_lines)
+
+
+
+
+
+                # Przykładowe użycie
+                modified_gcode8 = remove_lines_range_reverse(modified_gcode7, 2, to_line_reverse)
+
 
     
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(modified_gcode6)
+                custom_dialog.set_generated_gcode(modified_gcode8)
 
                 custom_dialog.exec_()
 

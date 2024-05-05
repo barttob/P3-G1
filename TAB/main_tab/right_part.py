@@ -30,6 +30,7 @@ from PyQt5.QtGui import QColor, QPen  # Import QPen here
 from PyQt5.QtCore import Qt, QPointF, QLineF
 
 
+
 class ToolParametersDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -527,6 +528,7 @@ class RightPart(QWidget):
         self.svg_to_mm = 0.352777778  # Conversion factor from SVG units to mm
         self.volume = None
         self.stop_requested = False
+        self.figures = []
 
     
     def request_stop(self):
@@ -581,8 +583,47 @@ class RightPart(QWidget):
                 # Odczytaj wygenerowany G-kod
                 generated_gcode = gcode_compiler.compile()
 
+
+
+
+                def remove_lines_range(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for i, line in enumerate(lines, start=1):
+                        if start_line <= i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode1 = remove_lines_range(generated_gcode, 6, 26)
+
+
+                def remove_lines_range_reverse(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    total_lines = len(lines)
+                    modified_lines = []
+
+                    for i in range(total_lines - 1, -1, -1):
+                        if start_line <= total_lines - i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.insert(0, lines[i])
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode2 = remove_lines_range_reverse(modified_gcode1, 2, 18)
+
+
+
+
+
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(generated_gcode)
+                custom_dialog.set_generated_gcode(modified_gcode2)
 
                 custom_dialog.exec_()
 
@@ -659,11 +700,42 @@ class RightPart(QWidget):
                 generated_gcode = '\n'.join(modified_lines)
 
 
+                def remove_lines_range(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for i, line in enumerate(lines, start=1):
+                        if start_line <= i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode1 = remove_lines_range(generated_gcode, 6, 46)
+
+
+                def remove_lines_range_reverse(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    total_lines = len(lines)
+                    modified_lines = []
+
+                    for i in range(total_lines - 1, -1, -1):
+                        if start_line <= total_lines - i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.insert(0, lines[i])
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode2 = remove_lines_range_reverse(modified_gcode1, 2, 57)
 
 
 
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(generated_gcode)
+                custom_dialog.set_generated_gcode(modified_gcode2)
 
                 custom_dialog.exec_()
 
@@ -719,6 +791,9 @@ class RightPart(QWidget):
                 depth_of_cutting_per_pass = dialog.depth_of_cutting_per_pass_edit.text()
                 depth_of_cutting_per_pass_int = int(depth_of_cutting_per_pass)
 
+                quantity_of_copies_line_int = total_depth_of_cutting_int // depth_of_cutting_per_pass_int
+                if total_depth_of_cutting_int % depth_of_cutting_per_pass_int != 0:
+                    quantity_of_copies_line_int += 1
 
 
                 def remove_duplicate_lines(generated_gcode):
@@ -765,9 +840,9 @@ class RightPart(QWidget):
                     return '\n'.join(modified_lines)
 
                 # Użycie:
-                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, total_depth_of_cutting_int) #duplicates to głębokość wiercenia
+                #modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, #total_depth_of_cutting_int-1) #duplicates to głębokość wiercenia
                 
-
+                modified_gcode2 = duplicate_lines_between_m3_and_g4(modified_gcode, quantity_of_copies_line_int-1) #duplicates to głębokość wiercenia
 
 
 
@@ -839,10 +914,96 @@ class RightPart(QWidget):
                 modified_gcode5 = add_z_reset(modified_gcode4)
 
 
+                def replace_z_value(g_code, new_z_value=-100):
+                    new_g_code = []
+                    min_z = None
+                    # Znajdź wszystkie wartości Z i zaktualizuj najniższą wartość Z
+                    for line in g_code.split('\n'):
+                        if line.startswith('G0') or line.startswith('G1'):
+                            if 'Z' in line:
+                                parts = line.split('Z')
+                                for part in parts[1:]:
+                                    z_value_str = part.split()[0]
+                                    if z_value_str:  # Sprawdź, czy znaleziono wartość Z
+                                        z_value = float(z_value_str)
+                                        if min_z is None or z_value < min_z:
+                                            min_z = z_value
+                    
+                    # Zastąp najniższą wartość Z wartością new_z_value
+                    for line in g_code.split('\n'):
+                        if line.startswith('G0') or line.startswith('G1'):
+                            if 'Z' in line:
+                                parts = line.split('Z')
+                                new_line = parts[0]
+                                for part in parts[1:]:
+                                    z_value_str = part.split()[0]
+                                    if z_value_str:  # Sprawdź, czy znaleziono wartość Z
+                                        z_value = float(z_value_str)
+                                        if z_value == min_z:
+                                            new_line += f'Z{new_z_value*-1}' + part[len(z_value_str):]
+                                        else:
+                                            new_line += 'Z' + z_value_str + part[len(z_value_str):]
+                                new_g_code.append(new_line)
+                            else:
+                                new_g_code.append(line)
+                        else:
+                            new_g_code.append(line)
+                    
+                    return '\n'.join(new_g_code)
+
+                # Przykładowe użycie
+                modified_gcode6 = replace_z_value(modified_gcode5, total_depth_of_cutting_int)
+                print(modified_gcode6)
+
+
+
+                # zmienne do ilości usuwanych linii
+                to_line = 29 + (quantity_of_copies_line_int - 1) * 14
+                print("To jest linia to_line:", to_line)
+
+                def remove_lines_range(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    modified_lines = []
+
+                    for i, line in enumerate(lines, start=1):
+                        if start_line <= i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.append(line)
+
+                    return '\n'.join(modified_lines)
+
+
+                # Przykładowe użycie
+                modified_gcode7 = remove_lines_range(modified_gcode6, 6, to_line)
+
+
+                # zmienne do ilości usuwanych linii reverse
+                to_line_reverse = 25 + (quantity_of_copies_line_int - 1) * 6
+                print("To jest linia to_line:", to_line)
+
+                def remove_lines_range_reverse(generated_gcode, start_line, end_line):
+                    lines = generated_gcode.split('\n')
+                    total_lines = len(lines)
+                    modified_lines = []
+
+                    for i in range(total_lines - 1, -1, -1):
+                        if start_line <= total_lines - i <= end_line:
+                            continue  # Pomijamy linie z zakresu, które mają być usunięte
+                        modified_lines.insert(0, lines[i])
+
+                    return '\n'.join(modified_lines)
+
+
+
+
+
+                # Przykładowe użycie
+                modified_gcode8 = remove_lines_range_reverse(modified_gcode7, 2, to_line_reverse)
+
 
     
                 # Ustaw wygenerowany G-kod w oknie dialogowym
-                custom_dialog.set_generated_gcode(modified_gcode5)
+                custom_dialog.set_generated_gcode(modified_gcode8)
 
                 custom_dialog.exec_()
 
@@ -890,7 +1051,7 @@ class RightPart(QWidget):
         rotations = [i * angle_step for i in range(num_rotations)]
         # Wyświetl listę obrotów w terminalu
         rotations_text = ", ".join([f"{rot:.2f}" for rot in rotations])
-        print(f"Wygenerowane obroty: [{rotations_text}] rad")
+       # print(f"Wygenerowane obroty: [{rotations_text}] rad")
         return rotations
     
     def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
@@ -938,7 +1099,14 @@ class RightPart(QWidget):
     def display_selected_layer(self, index):
         # Funkcja do wyświetlania wybranej warstwy
         for i, canvas in enumerate(self.canvas_layers):
-            canvas.setVisible(i == index)   
+            canvas.setVisible(i == index)  # Ustaw widoczność odpowiedniej warstwy
+
+        # Sprawdź, czy index jest w zakresie i zapisz obiekt Figure do pliku SVG
+        if 0 <= index < len(self.figures):
+            fig = self.figures[index]
+            svg_filename = "output.svg"  # Stała nazwa pliku
+            fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+            print(f"SVG version '{index + 1}' saved as '{svg_filename}'.")  
 
     def display_file(self, file_paths, width, height, checked_paths):
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
@@ -954,6 +1122,9 @@ class RightPart(QWidget):
         self.volume = Box(width, height)
         self.canvas_layers = []
         self.layerComboBox.clear()
+        self.best_configurations = []  # Lista do przechowywania najlepszych konfiguracji
+
+        min_area = float('inf')
 
         if not self.check_fit_in_volume(self.inputPoints, width, height):
             return
@@ -971,8 +1142,8 @@ class RightPart(QWidget):
         col_summary_text = ""
         collision_count = 0
         # List to store collision pairs
-        # collision_pairs = []
         seen_collisions = set()
+
         # Iterate through input points
         for i, item1 in enumerate(self.inputPoints):
             for j, item2 in enumerate(self.inputPoints):
@@ -1024,6 +1195,8 @@ class RightPart(QWidget):
 
             min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
 
+            best_area = float('inf')
+
             for i, item in enumerate(self.inputPoints):
 
                 parsed_path = parse_path(returned_svg_points[i])
@@ -1057,10 +1230,13 @@ class RightPart(QWidget):
             bounding_box_height = max_y - min_y
             bounding_box_area = bounding_box_width * bounding_box_height
             
-            if bounding_box_area < min_area:
+            if bounding_box_area < min_area: #* 0.99:
                 min_area = bounding_box_area
+                self.best_configurations.append((rotation, bounding_box_area, index))
                 min_area_rotation = rotation
                 min_area_index = index
+
+
 
                 # Draw the bounding box
                 ax.add_patch(Rectangle((min_x, min_y), bounding_box_width, bounding_box_height, linewidth=1, edgecolor='r', facecolor='none'))
@@ -1071,8 +1247,8 @@ class RightPart(QWidget):
                 self.scene.addWidget(canvas)
                 canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                 self.canvas_layers.append(canvas)
-                self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
-
+                #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
+                self.figures.append(fig)
                 # Update the scene and UI
                 self.scene.update()
                 QApplication.processEvents()
@@ -1080,21 +1256,47 @@ class RightPart(QWidget):
                 # Zapisz SVG
                 svg_filename = "output.svg"
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-
+        self.update_combobox_with_best_configurations()
         if min_area_index != -1:
             print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")
             #self.layerComboBox.setCurrentIndex(min_area_index)    
+            
+
+    def update_combobox_with_best_configurations(self):
+        # Sortowanie wyników według area od najmniejszej do największej
+        self.best_configurations.sort(key=lambda x: x[1])
+        #self.layerComboBox.clear()
+
+        for i, (rotation, area, index) in enumerate(self.best_configurations):
+            description = f"Version {i+1}"
+            self.layerComboBox.addItem(description, userData=index)
+
+        # Ustawienie najlepszej wersji jako domyślnej (najmniejsza area)
+        if self.best_configurations:
+            self.layerComboBox.setCurrentIndex(0)
+            self.display_selected_layer(0)
 
     def check_fit_in_volume(self, parsed_objects, width, height):
-        total_area = sum(obj.area() for obj in parsed_objects)
-        print("Suma powierzchni obiektów:", -total_area) 
+        global global_space_between_objects
+
+        # Powiększ każdy obiekt o zadany bufor
+        for item in parsed_objects:
+            item.inflation(int(global_space_between_objects * 2))
+        
+        # Sumuj powierzchnie powiększonych obiektów
+        total_required_area = sum(item.area() for item in parsed_objects)
+        total_required_area += 48000000
+        # Całkowita dostępna powierzchnia
         volume_area = width * height
-        if -total_area > volume_area:
-            min_area = -total_area - volume_area
+        print("volume area:", volume_area)
+        print("suma obiektów + powierzchnia między obiektami", total_required_area)
+        
+        # Sprawdź, czy wymagana powierzchnia nie przekracza dostępnej
+        if total_required_area > volume_area:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Critical)
             msg.setText("<font size='+2' color='red'>Błąd: Brak wystarczającej przestrzeni dla wszystkich obiektów.</font>")
-            msg.setInformativeText(f"Minimalna wymagana powierzchnia: {min_area} jednostek kwadratowych.\n\n"
+            msg.setInformativeText(f"Minimalna wymagana powierzchnia: {total_required_area} jednostek kwadratowych.\n\n"
                                     "Suma powierzchni obiektów przekracza dostępną objętość. Proszę dostosować wymiary lub zmniejszyć liczbę obiektów.")
             msg.setWindowTitle("Błąd")
             msg.setStyleSheet("QMessageBox { background-color: white; }")
@@ -1102,9 +1304,11 @@ class RightPart(QWidget):
             return False
         else:
             print("Powierzchnie poszczególnych obiektów:")
-            for i, obj in enumerate(parsed_objects):
-                print(f"Obiekt {i + 1}: {obj.area()}")
-        return True
+            for i, item in enumerate(parsed_objects):
+                print(f"Obiekt {i + 1}: {item.area()}")  # Wyświetlanie powierzchni każdego obiektu
+            return True
+
+
     
     def generate_gcode(self):
         # Open the tool parameters dialog

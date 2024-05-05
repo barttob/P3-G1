@@ -6,7 +6,7 @@ import random
 import os
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from pynest2d import NfpConfig, nest, Box
+from pynest2d import NfpConfig, nest, Box, Item
 from utils.parser import Parser
 import sys
 from math import pi
@@ -24,6 +24,10 @@ import sqlite3
 from datetime import datetime
 import secrets
 from matplotlib.patches import Rectangle
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path
+from PyQt5.QtGui import QColor, QPen  # Import QPen here
+from PyQt5.QtCore import Qt, QPointF, QLineF
 
 
 class ToolParametersDialog(QDialog):
@@ -481,6 +485,10 @@ class RightPart(QWidget):
         self.layerComboBox.currentIndexChanged.connect(self.display_selected_layer)
         layout.addWidget(self.layerComboBox)  # Add ComboBox right after ProgressBar
 
+        # Create and configure QLabel for summary text
+        self.summary_label = QLabel()
+        self.summary_label.setText("Podsumowanie")  # Initial text    
+        layout.addWidget(self.summary_label)
 
         # Graphics View
         self.graphics_view = QGraphicsView()
@@ -499,12 +507,17 @@ class RightPart(QWidget):
         # 'Generuj G-code' Button
         self.open_tool_parameters_button = QPushButton("Generuj G-code")
         self.open_tool_parameters_button.clicked.connect(self.open_tool_parameters_dialog_right)
-        button_layout.addWidget(self.open_tool_parameters_button)
-
-        
+        button_layout.addWidget(self.open_tool_parameters_button)        
 
         # Add the button layout to the main vertical layout
         layout.addLayout(button_layout)
+
+        # Create and configure QLabel for summary text
+        # self.summary_label = QLabel()
+        # self.summary_label.setText("Podsumowanie")  # Initial text
+
+        # # Add the summary_label to the existing layout
+        # layout.addWidget(self.summary_label)
 
         # Set the layout for the widget
         self.setLayout(layout)
@@ -879,6 +892,7 @@ class RightPart(QWidget):
         rotations_text = ", ".join([f"{rot:.2f}" for rot in rotations])
         print(f"Wygenerowane obroty: [{rotations_text}] rad")
         return rotations
+    
     def apply_trans_and_rot(self, points, trans_x, trans_y, rotation):
         transformed_points = []
         cos_rot = np.cos(rotation)
@@ -953,15 +967,53 @@ class RightPart(QWidget):
         min_area_rotation = 0
         min_area_index = -1
         
+        # Initialize summary text
+        col_summary_text = ""
+        collision_count = 0
+        # List to store collision pairs
+        # collision_pairs = []
+        seen_collisions = set()
+        # Iterate through input points
+        for i, item1 in enumerate(self.inputPoints):
+            for j, item2 in enumerate(self.inputPoints):
+                if i < j and Item.intersects(item1, item2):  # Ensure i < j to avoid duplicates
+                    collision_pair = (i, j) if i < j else (j, i)  # Ensure consistent pair order
+                    if collision_pair not in seen_collisions:
+                        seen_collisions.add(collision_pair)
+                        print(f"Collision detected between item {i} and item {j}")
+                        collision_count += 1
+                        # Handle collision here, e.g., marking items or taking action
+                    else:
+                        print(f"No collisions detected")
+        if collision_count == 0:
+            print("Summary: No collisions detected")
+            col_summary_text += "Summary: No collisions detected\n"
+            self.summary_label.setStyleSheet("color: green")
+        else:
+            print(f"Summary: Total {collision_count} collision(s) detected")
+            col_summary_text += f"Total {collision_count} collision(s) detected. Consider removing some of nested items.\n"
+            # Generate detailed collision report
+            col_summary_text += "Detailed Collision Report:\n"
+            for pair in seen_collisions:
+                col_summary_text += f"  - Object {pair[0]} collided with Object {pair[1]}\n"
+            self.summary_label.setStyleSheet("color: red")
+
+        # Update the summary_label with the generated summary text
+        self.summary_label.setText(col_summary_text)
+
+        
         for index, rotation in enumerate(rotations):
+            # collisions_at_rotation = []
             if self.stop_requested:
                 print("Nesting process stopped.")
                 self.stop_requested = False
                 break
-           
+
             nfp_config.rotations = [rotation]
             num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
             self.progress_bar.setValue(index)
+
+            # Prepare plot for visualization
             fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
             ax = fig.add_subplot(111)
             ax.set_aspect('equal')
@@ -973,6 +1025,7 @@ class RightPart(QWidget):
             min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
 
             for i, item in enumerate(self.inputPoints):
+
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
 
@@ -983,8 +1036,19 @@ class RightPart(QWidget):
                         transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
                         x_points.append(transformed_point[0])
                         y_points.append(transformed_point[1])
+                
+                # Determine if the current item is involved in a collision
+                collides = any((i in pair) for pair in seen_collisions)
+                
+                if collides:
+                    # Draw highlighted colliding items
+                    ax.plot(x_points, y_points, color='red', linewidth=1)  # Example: red color for colliding items
+                    # Add text annotation with object number
+                    ax.text(np.mean(x_points), np.mean(y_points), str(i), color='red', fontsize=12, ha='center', va='center')
+                else:
+                    # Draw normally for non-colliding items
+                    ax.plot(x_points, y_points, color='black', linewidth=1)
 
-                ax.plot(x_points, y_points, color='black', linewidth=1)
                 min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
                 min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
 
@@ -1019,7 +1083,7 @@ class RightPart(QWidget):
 
         if min_area_index != -1:
             print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")
-            #self.layerComboBox.setCurrentIndex(min_area_index)
+            #self.layerComboBox.setCurrentIndex(min_area_index)    
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         total_area = sum(obj.area() for obj in parsed_objects)

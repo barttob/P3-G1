@@ -9,9 +9,6 @@ class InfoTab(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        label = QLabel("Visualization of G-code")
-        layout.addWidget(label)
-
         # Create a QGraphicsView for visualization
         self.graphics_view = QGraphicsView()
         layout.addWidget(self.graphics_view)
@@ -35,7 +32,24 @@ class InfoTab(QWidget):
 
         # Initialize gcode_text attribute
         self.gcode_text = ""
-        self.current_pos = (0, 0)  # Initialize current position
+        self.current_pos = (0, 0)  # Initialize current position\
+        
+        self.cut_time = 0
+        self.speed = 0
+        self.total_cutting_time = 0
+        self.total_movement_time = 0
+        self.total_distance_traveled = 0
+        self.speed_sum = 0
+        self.num_lines = 0
+
+        self.stats_labels = {
+            "Total Execution Time": QLabel("Całklowity czas pracy: 0 min"),
+            "Total Cutting Time": QLabel("Czas cięcia: 0 min"),
+            "Average Speed": QLabel("Średnia prędkość: 0 mm/min")
+        }
+        
+        for label in self.stats_labels.values():
+            layout.addWidget(label)
 
     def import_gcode(self):
         # Open a file dialog to select a G-code file
@@ -53,7 +67,7 @@ class InfoTab(QWidget):
         self.scene.clear()
 
         pen = QPen(Qt.black)
-        pen.setWidth(2)
+        pen.setWidth(3)
         self.current_pos = (0, 0)
 
         gray_pen = QPen(Qt.lightGray)
@@ -73,6 +87,14 @@ class InfoTab(QWidget):
         # Tracks whether the current line is solid or dotted
         solid_line = True
 
+        self.cut_time = 0
+        self.speed = 0
+        self.total_cutting_time = 0
+        self.total_movement_time = 0
+        self.total_distance_traveled = 0
+        self.speed_sum = 0
+        self.num_lines = 0
+
         for i, line in enumerate(lines[:lines_to_visualize]):
             # Split each line into parts
             parts = line[:-1].split()
@@ -91,15 +113,29 @@ class InfoTab(QWidget):
 
             params = {part[0]: float(part[1:]) for part in parts[1:]} if len(parts) > 1 else {}
 
+            self.num_lines += 1
+            if 'F' in params:
+                self.speed = params['F']
+            self.speed_sum += self.speed
+                # print(self.speed)
+                
+
             if 'X' in params:
                 new_x = params['X']
                 new_y = params.get('Y', self.current_pos[1])
 
                 if solid_line:
                     pen.setStyle(Qt.SolidLine)
+                    pen.setColor(Qt.black)
                 else:
                     pen.setStyle(Qt.DotLine)
+                    pen.setColor(Qt.red)
                 self.scene.addLine(self.current_pos[0], self.current_pos[1], new_x, new_y, pen)
+                diff_x = new_x - self.current_pos[0]
+                diff_y = new_y - self.current_pos[1]
+                self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
+                if solid_line:
+                    self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
                 self.current_pos = (new_x, new_y)
             elif 'Y' in params:
                 new_x = params.get('X', self.current_pos[0])
@@ -107,9 +143,16 @@ class InfoTab(QWidget):
 
                 if solid_line:
                     pen.setStyle(Qt.SolidLine)
+                    pen.setColor(Qt.black)
                 else:
                     pen.setStyle(Qt.DotLine)
+                    pen.setColor(Qt.red)
                 self.scene.addLine(self.current_pos[0], self.current_pos[1], new_x, new_y, pen)
+                diff_x = new_x - self.current_pos[0]
+                diff_y = new_y - self.current_pos[1]
+                self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
+                if solid_line:
+                    self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
                 self.current_pos = (new_x, new_y)
 
             if i == lines_to_visualize - 1:
@@ -134,6 +177,12 @@ class InfoTab(QWidget):
                 continue
             
             params = {part[0]: float(part[1:]) for part in parts[1:]} if len(parts) > 1 else {}
+
+            self.num_lines += 1
+            if 'F' in params:
+                self.speed = params['F']
+            self.speed_sum += self.speed
+                # print(self.speed)
             
             if 'X' in params:
                 new_x = params['X']
@@ -141,9 +190,16 @@ class InfoTab(QWidget):
 
                 if solid_line:
                     gray_pen.setStyle(Qt.SolidLine)
+                    # gray_pen.setColor(Qt.lightGray)
                 else:
                     gray_pen.setStyle(Qt.DotLine)
+                    # gray_pen.setColor(Qt.lightRed)
                 self.scene.addLine(self.current_pos[0], self.current_pos[1], new_x, new_y, gray_pen)
+                diff_x = new_x - self.current_pos[0]
+                diff_y = new_y - self.current_pos[1]
+                self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
+                if solid_line:
+                    self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
                 self.current_pos = (new_x, new_y)
             elif 'Y' in params:
                 new_x = params.get('X', self.current_pos[0])
@@ -151,11 +207,21 @@ class InfoTab(QWidget):
 
                 if solid_line:
                     gray_pen.setStyle(Qt.SolidLine)
+                    # gray_pen.setColor(Qt.lightGray)
                 else:
                     gray_pen.setStyle(Qt.DotLine)
+                    # gray_pen.setColor(Qt.lightRed)
                 self.scene.addLine(self.current_pos[0], self.current_pos[1], new_x, new_y, gray_pen)
+                diff_x = new_x - self.current_pos[0]
+                diff_y = new_y - self.current_pos[1]
+                self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
+                if solid_line:
+                    self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) * self.speed / 100
                 self.current_pos = (new_x, new_y)
-
+        
+        self.stats_labels["Total Execution Time"].setText("Całkowity czas pracy: {} min".format(int(self.total_cutting_time  / 60)))
+        self.stats_labels["Total Cutting Time"].setText("Czas cięcia: {} min".format(int(self.cut_time / 60)))
+        self.stats_labels["Average Speed"].setText("Średnia prędkość: {:.2f} mm/min".format(self.speed_sum / self.num_lines))
 
 
 

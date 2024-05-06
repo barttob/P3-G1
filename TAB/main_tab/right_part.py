@@ -28,6 +28,8 @@ from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 from PyQt5.QtGui import QColor, QPen  # Import QPen here
 from PyQt5.QtCore import Qt, QPointF, QLineF
+import asyncio
+from qasync import asyncSlot
 
 
 
@@ -533,9 +535,11 @@ class RightPart(QWidget):
     
     def request_stop(self):
         self.stop_requested = True
+        self.progress_bar.setValue(0)
         print("Stop requested. The nesting process will be terminated after the current iteration.")
     def stop_nesting(self):
             self.nesting_process.request_stop()
+            
     # metoda przyjmująca parametry narzędzia wybrane podczas konifguracji nestingu 
     def sended_tool_param(self, saved_parameters):
         
@@ -1108,12 +1112,13 @@ class RightPart(QWidget):
             fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
             print(f"SVG version '{index + 1}' saved as '{svg_filename}'.")  
 
-    def display_file(self, file_paths, width, height, checked_paths):
+    async def display_file(self, file_paths, width, height, checked_paths):
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
             QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
             return
 
         self.progress_bar.setMaximum(global_rotations - 1)
+        await asyncio.sleep(0)
         self.inputPoints = []
         file_to_parse = Parser(checked_paths)
         returned_values = file_to_parse.parse_svg()
@@ -1146,6 +1151,7 @@ class RightPart(QWidget):
 
         # Iterate through input points
         for i, item1 in enumerate(self.inputPoints):
+            await asyncio.sleep(0)
             for j, item2 in enumerate(self.inputPoints):
                 if i < j and Item.intersects(item1, item2):  # Ensure i < j to avoid duplicates
                     collision_pair = (i, j) if i < j else (j, i)  # Ensure consistent pair order
@@ -1174,6 +1180,7 @@ class RightPart(QWidget):
 
         
         for index, rotation in enumerate(rotations):
+            await asyncio.sleep(0)
             # collisions_at_rotation = []
             if self.stop_requested:
                 print("Nesting process stopped.")
@@ -1198,11 +1205,13 @@ class RightPart(QWidget):
             best_area = float('inf')
 
             for i, item in enumerate(self.inputPoints):
+                await asyncio.sleep(0)
 
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
 
                 for segment in parsed_path:
+                    await asyncio.sleep(0)
                     x_points, y_points = [], []
                     for t in np.linspace(0, 1, num=80):
                         point = segment.point(t)
@@ -1233,6 +1242,7 @@ class RightPart(QWidget):
             bounding_box_area = bounding_box_width * bounding_box_height
             
             if bounding_box_area < min_area: #* 0.99:
+                await asyncio.sleep(0)
                 min_area = bounding_box_area
                 self.best_configurations.append((rotation, bounding_box_area, index))
                 min_area_rotation = rotation

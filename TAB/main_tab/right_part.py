@@ -1113,6 +1113,7 @@ class RightPart(QWidget):
             print(f"SVG version '{index + 1}' saved as '{svg_filename}'.")  
 
     async def display_file(self, file_paths, width, height, checked_paths):
+        self.figures.clear()
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
             QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
             return

@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
 
         tab_widget.addTab(main_tab, "Main")
         tab_widget.addTab(config_tab, "Konfiguracja nestingu")
-        tab_widget.addTab(info_tab, "Info")
+        tab_widget.addTab(info_tab, "Wizualizacja")
 
         self.setCentralWidget(tab_widget)
 

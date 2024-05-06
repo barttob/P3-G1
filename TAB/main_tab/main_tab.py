@@ -18,7 +18,7 @@ class MainTab(QWidget):
         # First part (left)
         left_part = LeftPart()
         first_row_layout.addWidget(left_part)
-        left_part.setFixedWidth(650)
+        left_part.setFixedWidth(440)
 
         # Second part (right)
         right_part = RightPart()

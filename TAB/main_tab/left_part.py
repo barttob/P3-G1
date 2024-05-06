@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox, QApplication, QMessageBox
+from PyQt5.QtWidgets import QWidget, QSpinBox, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, QHBoxLayout, QCheckBox, QLabel, QLineEdit, QMessageBox, QGroupBox, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtXml import QDomDocument
 from PyQt5.QtGui import QDoubleValidator
@@ -23,6 +23,27 @@ from utils.parser import Parser
 from shapely.geometry import Point, Polygon, LineString
 import asyncio
 
+class CenteredCheckbox(QWidget):
+    def __init__(self, parent=None):
+        super(CenteredCheckbox, self).__init__(parent)
+        self.layout = QHBoxLayout(self)
+        self.checkbox = QCheckBox()
+        self.layout.addWidget(self.checkbox)
+        self.layout.setAlignment(Qt.AlignCenter)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
+
+class CenteredSpinBox(QWidget):
+    def __init__(self, parent=None):
+        super(CenteredSpinBox, self).__init__(parent)
+        self.layout = QHBoxLayout(self)
+        self.spin_box = QSpinBox()
+        self.spin_box.setMinimum(0)  # Ustaw minimalną wartość
+        self.spin_box.setMaximum(100)  # Ustaw maksymalną wartość (dostosuj do swoich potrzeb)
+        self.layout.addWidget(self.spin_box)
+        self.layout.setAlignment(Qt.AlignCenter)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
 
 class LeftPart(QWidget):
     def __init__(self):
@@ -80,12 +101,17 @@ class LeftPart(QWidget):
 
 
         # Ustawienie nagłówków tabeli
-        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Ilość elementów']
+        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Ilość']
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
+        self.table.setColumnHidden(2, True)
+        self.table.setColumnWidth(0, 145)
+        self.table.setColumnWidth(4, 60)
+        self.table.setColumnWidth(3, 70)
 
         # Ustawienie dopasowania tabeli do maksymalnej dostępnej szerokości
         self.table.horizontalHeader().setStretchLastSection(True)
+        
 
         # Przyciski 'Zaznacz wszystko' i 'Odznacz wszystko'
         btn_layout = QHBoxLayout()
@@ -198,10 +224,22 @@ class LeftPart(QWidget):
             checkbox_item = QCheckBox()
             self.table.setCellWidget(row_position, 3, checkbox_item)
 
+            number_input = QLineEdit('1')
             self.table.setCellWidget(row_position, 4, number_input)
+            number_input.setText('1')
 
             # Ustawienie stałego rozmiaru dla komórki z miniaturą
             self.table.verticalHeader().setDefaultSectionSize(145)
+             
+             # Centrowanie tekstu w każdej komórce
+            rows = self.table.rowCount()
+            cols = self.table.columnCount()
+            for row in range(rows):
+                for col in range(cols):
+                    item = self.table.item(row, col)
+                    if item:  # Sprawdzenie, czy komórka jest niepusta
+                        item.setTextAlignment(Qt.AlignCenter)  # Ustawienie wyrównania tekstu na środek
+
 
         except Exception as e:
             print("Błąd przetwarzania grupy SVG:", e)
@@ -249,38 +287,38 @@ class LeftPart(QWidget):
 
                 # Iteracja przez grupy elementów ścieżki i łączone linie
                 for group in path_line_groups.values():
-                    # Pominięcie grupy, jeśli zawiera tylko linie
                     if all(element.tag.endswith('line') for element in group):
                         continue
 
-                    # Tworzenie miniatury figury
                     figure_canvas = self.create_svg_figure(group)
-
-                    # Dodanie wiersza do tabeli
                     row_position = self.table.rowCount()
                     self.table.insertRow(row_position)
 
-                    # Wstawienie miniatury figury do pierwszej kolumny
                     self.table.setCellWidget(row_position, 0, figure_canvas)
-
-                    # Wstawienie typu elementu do drugiej kolumny
                     self.table.setItem(row_position, 1, QTableWidgetItem('SVG Path'))
-
-                    # Wstawienie danych (ścieżki) do trzeciej kolumny
-                    # print(' '.join(ET.tostring(path, encoding='unicode') for path in group))
                     path_data = ' '.join(ET.tostring(path, encoding='unicode') for path in group)
                     self.table.setItem(row_position, 2, QTableWidgetItem(path_data))
 
-                    # Dodanie checkboxa do zaznaczania wiersza
-                    checkbox_item = QCheckBox()
-                    self.table.setCellWidget(row_position, 3, checkbox_item)
+                    # Wyśrodkowanie QCheckBox
+                    checkbox_widget = CenteredCheckbox()
+                    self.table.setCellWidget(row_position, 3, checkbox_widget)
 
-                    number_input = QLineEdit('1')
-                    self.table.setCellWidget(row_position, 4, number_input)
-                    number_input.setText('1')
+                    # Wyśrodkowanie QLineEdit
+                    spin_box_widget = CenteredSpinBox()
+                    self.table.setCellWidget(row_position, 4, spin_box_widget)
+                    spin_box_widget.spin_box.setValue(1)
 
-                    # Ustawienie stałego rozmiaru dla komórki z miniaturą
                     self.table.verticalHeader().setDefaultSectionSize(145)
+
+                # Centrowanie tekstu w każdej komórce
+                rows = self.table.rowCount()
+                cols = self.table.columnCount()
+                for row in range(rows):
+                    for col in range(cols):
+                        item = self.table.item(row, col)
+                        if item:  # Sprawdzenie, czy komórka jest niepusta
+                            item.setTextAlignment(Qt.AlignCenter)  # Ustawienie wyrównania tekstu na środek
+
 
             except Exception as e:
                 print("Błąd odczytu pliku SVG:", e)
@@ -289,15 +327,13 @@ class LeftPart(QWidget):
     def get_checked_paths(self):
         checked_paths = []
         
-        # Iterating through rows of the table
         for row in range(self.table.rowCount()):
-            # Getting the checkbox widget from the cell
             checkbox_widget = self.table.cellWidget(row, 3)
-            # Checking if the checkbox is checked
-            if checkbox_widget.isChecked():
-                # Retrieving the path_data associated with the checked row
-                for i in range(int(self.table.cellWidget(row, 4).text())):
-                    path_data = self.table.item(row, 2).text()
+            if checkbox_widget.checkbox.isChecked():
+                spin_box_widget = self.table.cellWidget(row, 4)
+                repetitions = spin_box_widget.spin_box.value()  # Pobranie wartości z QSpinBox
+                path_data = self.table.item(row, 2).text()
+                for i in range(repetitions):
                     checked_paths.append(path_data)
         
         return checked_paths
@@ -561,13 +597,13 @@ class LeftPart(QWidget):
 
     def select_all_rows(self):
         for row in range(self.table.rowCount()):
-            checkbox_item = self.table.cellWidget(row, 3)
-            checkbox_item.setChecked(True)
+            checkbox_widget = self.table.cellWidget(row, 3)
+            checkbox_widget.checkbox.setChecked(True)  # Użycie .checkbox aby uzyskać dostęp do QCheckBox
 
     def deselect_all_rows(self):
         for row in range(self.table.rowCount()):
-            checkbox_item = self.table.cellWidget(row, 3)
-            checkbox_item.setChecked(False)
+            checkbox_widget = self.table.cellWidget(row, 3)
+            checkbox_widget.checkbox.setChecked(False)
 
     def display_selected_file(self):
         width_text = self.width_input.text()

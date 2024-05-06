@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QPushButton, QTextEdit, QFileDialog, QSlider
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsView, QGraphicsScene, QPushButton, QTextEdit, QFileDialog, QSlider, QHBoxLayout
 from PyQt5.QtGui import QPainter, QPen, QColor, QTextCursor, QBrush
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QTimer
+
 
 class InfoTab(QWidget):
     def __init__(self):
@@ -20,9 +21,19 @@ class InfoTab(QWidget):
         self.slider.setValue(100)  # Start with full visualization
         layout.addWidget(self.slider)
         
+        button_layout = QHBoxLayout()
+
         import_button = QPushButton("Import G-code from file")
         import_button.clicked.connect(self.import_gcode)
-        layout.addWidget(import_button)
+        button_layout.addWidget(import_button)
+
+        # Add a button to start automatic slider movement
+        self.auto_move_button = QPushButton("Start Auto Move")
+        button_layout.addWidget(self.auto_move_button)
+        self.auto_move_button.clicked.connect(self.start_auto_move)
+
+        # Add the button layout to the main layout
+        layout.addLayout(button_layout)
 
         # Create a QGraphicsScene
         self.scene = QGraphicsScene()
@@ -32,7 +43,7 @@ class InfoTab(QWidget):
 
         # Initialize gcode_text attribute
         self.gcode_text = ""
-        self.current_pos = (0, 0)  # Initialize current position\
+        self.current_pos = (0, 0)  # Initialize current position
         
         self.cut_time = 0
         self.speed = 0
@@ -40,7 +51,7 @@ class InfoTab(QWidget):
         self.total_movement_time = 0
         self.total_distance_traveled = 0
         self.speed_sum = 0
-        self.num_lines = 0
+        self.num_lines = 1
 
         self.stats_labels = {
             "Total Execution Time": QLabel("Całklowity czas pracy: 0 min"),
@@ -50,6 +61,22 @@ class InfoTab(QWidget):
         
         for label in self.stats_labels.values():
             layout.addWidget(label)
+
+        # Timer for automatic slider movement
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.increment_slider_value)
+
+    def start_auto_move(self):
+        self.slider.setValue(0)
+        # Start the timer to automatically move the slider
+        self.timer.start(100)  # Adjust the interval (milliseconds) as needed for the desired speed
+
+    def increment_slider_value(self):
+        # Increment the slider's value and stop the timer when it reaches the maximum value
+        if self.slider.value() < self.slider.maximum():
+            self.slider.setValue(self.slider.value() + 1)
+        else:
+            self.timer.stop()
 
     def import_gcode(self):
         # Open a file dialog to select a G-code file

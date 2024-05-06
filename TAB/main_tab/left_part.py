@@ -79,7 +79,7 @@ class LeftPart(QWidget):
 
 
         # Ustawienie nagłówków tabeli
-        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Opcje']
+        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Ilość elementów']
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
 
@@ -197,6 +197,8 @@ class LeftPart(QWidget):
             checkbox_item = QCheckBox()
             self.table.setCellWidget(row_position, 3, checkbox_item)
 
+            self.table.setCellWidget(row_position, 4, number_input)
+
             # Ustawienie stałego rozmiaru dla komórki z miniaturą
             self.table.verticalHeader().setDefaultSectionSize(145)
 
@@ -272,6 +274,10 @@ class LeftPart(QWidget):
                     checkbox_item = QCheckBox()
                     self.table.setCellWidget(row_position, 3, checkbox_item)
 
+                    number_input = QLineEdit('1')
+                    self.table.setCellWidget(row_position, 4, number_input)
+                    number_input.setText('1')
+
                     # Ustawienie stałego rozmiaru dla komórki z miniaturą
                     self.table.verticalHeader().setDefaultSectionSize(145)
 
@@ -289,8 +295,9 @@ class LeftPart(QWidget):
             # Checking if the checkbox is checked
             if checkbox_widget.isChecked():
                 # Retrieving the path_data associated with the checked row
-                path_data = self.table.item(row, 2).text()
-                checked_paths.append(path_data)
+                for i in range(int(self.table.cellWidget(row, 4).text())):
+                    path_data = self.table.item(row, 2).text()
+                    checked_paths.append(path_data)
         
         return checked_paths
 

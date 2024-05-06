@@ -57,9 +57,9 @@ class Parser():
                 # print(self.svg_points)
                 # print(self.is_convex(self.svg_points))
                 # print('retaa')
-                while not self.is_convex(self.svg_points):
-                #     print('reta')
-                    self.svg_points = self.remove_concave_vertices(self.svg_points)
+                # while not self.is_convex(self.svg_points):
+                # #     print('reta')
+                #     self.svg_points = self.remove_concave_vertices(self.svg_points)
                     # print(self.is_convex(vertices))
                 # else:
                 #     vertices = path

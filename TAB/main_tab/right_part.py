@@ -1202,28 +1202,30 @@ class RightPart(QWidget):
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
 
-                x_points, y_points = [], []
                 for segment in parsed_path:
+                    x_points, y_points = [], []
                     for t in np.linspace(0, 1, num=80):
                         point = segment.point(t)
                         transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
                         x_points.append(transformed_point[0])
                         y_points.append(transformed_point[1])
                 
-                # Determine if the current item is involved in a collision
-                collides = any((i in pair) for pair in seen_collisions)
-                
-                if collides:
-                    # Draw highlighted colliding items
-                    ax.plot(x_points, y_points, color='red', linewidth=1)  # Example: red color for colliding items
-                    # Add text annotation with object number
-                    ax.text(np.mean(x_points), np.mean(y_points), str(i), color='red', fontsize=12, ha='center', va='center')
-                else:
-                    # Draw normally for non-colliding items
-                    ax.plot(x_points, y_points, color='black', linewidth=1)
+                    # Determine if the current item is involved in a collision
+                    collides = any((i in pair) for pair in seen_collisions)
+                    
+                    if collides:
+                        # Draw highlighted colliding items
+                        ax.plot(x_points, y_points, color='red', linewidth=1)  # Example: red color for colliding items
+                        # Add text annotation with object number
+                    else:
+                        # Draw normally for non-colliding items
+                        ax.plot(x_points, y_points, color='black', linewidth=1)
 
-                min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
-                min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
+                    min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
+                    min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
+                    
+                if collides:
+                    ax.text(np.mean(x_points), np.mean(y_points), str(i), color='red', fontsize=12, ha='center', va='center')
 
             # Calculate the area of the bounding box
             bounding_box_width = max_x - min_x

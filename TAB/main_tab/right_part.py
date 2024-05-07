@@ -1202,7 +1202,7 @@ class RightPart(QWidget):
                 # Generate detailed collision report
                 col_summary_text += "Detailed Collision Report:\n"
                 for pair in seen_collisions:
-                    col_summary_text += f"  - Object {pair[0]} collided with Object {pair[1]}\n"
+                    col_summary_text += f"  - Object {pair[0] + 1} collided with Object {pair[1] + 1}\n"
                 self.summary_label.setStyleSheet("color: red")
 
             # Update the summary_label with the generated summary text
@@ -1256,7 +1256,7 @@ class RightPart(QWidget):
                     min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
                     
                 if collides:
-                    ax.text(np.mean(x_points), np.mean(y_points), str(i), color='red', fontsize=12, ha='center', va='center')
+                    ax.text(np.mean(x_points), np.mean(y_points), str(i + 1), color='red', fontsize=12, ha='center', va='center')
 
             # Calculate the area of the bounding box
             bounding_box_width = max_x - min_x

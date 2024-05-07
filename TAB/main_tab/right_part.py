@@ -1144,40 +1144,6 @@ class RightPart(QWidget):
         min_area_rotation = 0
         min_area_index = -1
         
-        # Initialize summary text
-        col_summary_text = ""
-        collision_count = 0
-        # List to store collision pairs
-        seen_collisions = set()
-
-        # Iterate through input points
-        for i, item1 in enumerate(self.inputPoints):
-            await asyncio.sleep(0)
-            for j, item2 in enumerate(self.inputPoints):
-                if i < j and Item.intersects(item1, item2):  # Ensure i < j to avoid duplicates
-                    collision_pair = (i, j) if i < j else (j, i)  # Ensure consistent pair order
-                    if collision_pair not in seen_collisions:
-                        seen_collisions.add(collision_pair)
-                        print(f"Collision detected between item {i} and item {j}")
-                        collision_count += 1
-                        # Handle collision here, e.g., marking items or taking action
-                    else:
-                        print(f"No collisions detected")
-        if collision_count == 0:
-            print("Summary: No collisions detected")
-            col_summary_text += "Summary: No collisions detected\n"
-            self.summary_label.setStyleSheet("color: green")
-        else:
-            print(f"Summary: Total {collision_count} collision(s) detected")
-            col_summary_text += f"Total {collision_count} collision(s) detected. Consider removing some of nested items.\n"
-            # Generate detailed collision report
-            col_summary_text += "Detailed Collision Report:\n"
-            for pair in seen_collisions:
-                col_summary_text += f"  - Object {pair[0]} collided with Object {pair[1]}\n"
-            self.summary_label.setStyleSheet("color: red")
-
-        # Update the summary_label with the generated summary text
-        self.summary_label.setText(col_summary_text)
 
         
         for index, rotation in enumerate(rotations):
@@ -1205,8 +1171,63 @@ class RightPart(QWidget):
 
             best_area = float('inf')
 
+            # Initialize summary text
+            col_summary_text = ""
+            collision_count = 0
+            # List to store collision pairs
+            seen_collisions = set()
+
+            # Iterate through input points
+            for i, item1 in enumerate(self.inputPoints):
+                await asyncio.sleep(0)
+                transItem1 = item1.transformedShape()
+                for j, item2 in enumerate(self.inputPoints):
+                    transItem2 = item2.transformedShape()
+                    if i < j and Item.intersects(transItem1, transItem2):  # Ensure i < j to avoid duplicates
+                        collision_pair = (i, j) if i < j else (j, i)  # Ensure consistent pair order
+                        if collision_pair not in seen_collisions:
+                            seen_collisions.add(collision_pair)
+                            print(f"Collision detected between item {i} and item {j}")
+                            collision_count += 1
+                            # Handle collision here, e.g., marking items or taking action
+                        else:
+                            print(f"No collisions detected")
+            if collision_count == 0:
+                print("Summary: No collisions detected")
+                col_summary_text += "Summary: No collisions detected\n"
+                self.summary_label.setStyleSheet("color: green")
+            else:
+                print(f"Summary: Total {collision_count} collision(s) detected")
+                col_summary_text += f"Total {collision_count} collision(s) detected. Consider removing some of nested items.\n"
+                # Generate detailed collision report
+                col_summary_text += "Detailed Collision Report:\n"
+                for pair in seen_collisions:
+                    col_summary_text += f"  - Object {pair[0]} collided with Object {pair[1]}\n"
+                self.summary_label.setStyleSheet("color: red")
+
+            # Update the summary_label with the generated summary text
+            self.summary_label.setText(col_summary_text)
+            
+
             for i, item in enumerate(self.inputPoints):
                 await asyncio.sleep(0)
+                # # testowe
+                # x_values = []
+                # y_values = []
+
+                # transItem = item.transformedShape()
+
+                # rows = len(transItem.toString().strip().split('\n')) - 1
+                # for j in range(rows - 1):
+                #     x_value = transItem.vertex(j).x()
+                #     y_value = transItem.vertex(j).y()
+                #     x_values.append(x_value)
+                #     y_values.append(y_value)
+                # random_color = (random.random(), random.random(), random.random())
+                # ax.plot(x_values, y_values, color=random_color, linewidth=1)
+
+                parsed_path = parse_path(returned_svg_points[i])
+                item.resetTransformation()
 
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()

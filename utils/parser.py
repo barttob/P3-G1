@@ -91,12 +91,7 @@ class Parser():
         # Check the sign of the cross products
         sign = None
         for i in range(len(vertices)):
-            # x1 = vertices[i].start.real
-            # y1 = vertices[i].start.imag
-            # x2 = vertices[(i + 1) % len(vertices)].start.real
-            # y2 = vertices[(i + 1) % len(vertices)].start.imag
-            # x3 = vertices[(i + 2) % len(vertices)].start.real
-            # y3 = vertices[(i + 2) % len(vertices)].start.imag
+
             x1, y1 = vertices[i]
             x2, y2 = vertices[(i + 1) % len(vertices)]
             x3, y3 = vertices[(i + 2) % len(vertices)]
@@ -110,20 +105,6 @@ class Parser():
     
     def remove_concave_vertices(self, path):
         vertices = path
-        # for segment in path:
-        #     if isinstance(segment, Line):
-        #         vertices.append((segment.start.real, segment.start.imag))
-        #     elif isinstance(segment, CubicBezier):
-        #         for t in range(0, 101, 5):  # Sample 20 points on the curve
-        #             point = segment.point(t / 100)
-        #             # print(point)
-        #             vertices.append((int(point.real), int(point.imag)))
-        #         # vertices.append((segment.start.real, segment.start.imag))
-        #     elif isinstance(segment, Move):
-        #         vertices.append((segment.start.real, segment.start.imag))
-        #     elif isinstance(segment, Close):
-        #         vertices.append((segment.start.real, segment.start.imag))
-        #         break
 
         new_path_vertices = []
 

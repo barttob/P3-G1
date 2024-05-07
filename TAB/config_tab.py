@@ -382,7 +382,7 @@ class ConfigTab(QWidget):
 
             form_layout.addRow("Prędkość cięcia:", self.tool_parameters['laser']['cutting_speed'])
             form_layout.addRow("Prędkość ruchu:", self.tool_parameters['laser']['speed_movement'])
-            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['laser']['cutting_depth'])
+            #form_layout.addRow("Głębokość cięcia:", self.tool_parameters['laser']['cutting_depth'])
             form_layout.addRow("Czas przestoju:", self.tool_parameters['laser']['downtime'])
             form_layout.addRow("Jednostka:", self.tool_parameters['laser']['unit'])
             form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['laser']['custom_header'])
@@ -450,7 +450,7 @@ class ConfigTab(QWidget):
             #form_layout.addRow("Prędkość plazmy:", self.tool_parameters['plazma']['plasma_speed'])
             form_layout.addRow("Prędkość cięcia:", self.tool_parameters['plazma']['cutting_speed'])            # jest 
             form_layout.addRow("Prędkość ruchu:", self.tool_parameters['plazma']['speed_movement'])            # jest
-            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['plazma']['cutting_depth'])           # nie ma
+            #form_layout.addRow("Głębokość cięcia:", self.tool_parameters['plazma']['cutting_depth'])           # nie ma
             form_layout.addRow("Głębokość sondowania:", self.tool_parameters['plazma']['probing_depth'])       # jest 
             form_layout.addRow("Czas przestoju:", self.tool_parameters['plazma']['downtime'])                  # jest
             form_layout.addRow("Jednostka:", self.tool_parameters['plazma']['unit'])                           # jest
@@ -490,7 +490,7 @@ class ConfigTab(QWidget):
             #form_layout.addRow("Prędkość stożka:", self.tool_parameters['stożek']['cone_speed'])
             form_layout.addRow("Prędkość cięcia:", self.tool_parameters['stożek']['cutting_speed'])
             form_layout.addRow("Prędkość ruchu:", self.tool_parameters['stożek']['speed_movement'])
-            form_layout.addRow("Głębokość cięcia:", self.tool_parameters['stożek']['cutting_depth'])
+            #form_layout.addRow("Głębokość cięcia:", self.tool_parameters['stożek']['cutting_depth'])
             form_layout.addRow("Czas przestoju:", self.tool_parameters['stożek']['downtime'])
             form_layout.addRow("Jednostka:", self.tool_parameters['stożek']['unit'])
             form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['stożek']['custom_header'])
@@ -900,7 +900,7 @@ class ConfigTab(QWidget):
             'type_tool': 'laser',
             'cutting_speed': '103',  # Domyślna prędkość cięcia
             'speed_movement': '10',  # Domyślna prędkość ruchu
-            'cutting_depth': '12',   # Domyślna głębokość cięcia
+            #'cutting_depth': '12',   # Domyślna głębokość cięcia
             'downtime': '30',        # Domyślny czas przestoju
             'unit': 'mm',            # Domyślna jednostka
             'custom_header': 'M10',  # Domyślny nagłówek

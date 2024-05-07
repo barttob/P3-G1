@@ -69,10 +69,10 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.probing_depth_label)
         self.layout.addWidget(self.probing_depth_edit)
 
-        self.depth_label = QLabel("Głębokość cięcia:")  # brak w gcodzie
-        self.depth_edit = QLineEdit()
-        self.layout.addWidget(self.depth_label)
-        self.layout.addWidget(self.depth_edit)
+        #self.depth_label = QLabel("Głębokość cięcia:")  # brak w gcodzie
+        #self.depth_edit = QLineEdit()
+        #self.layout.addWidget(self.depth_label)
+        #self.layout.addWidget(self.depth_edit)
 
         self.dwell_label = QLabel("Czas przestoju:")
         self.dwell_edit = QLineEdit()
@@ -198,9 +198,6 @@ class ToolParametersDialog(QDialog):
             self.movement_speed_label.setVisible(True)
             self.movement_speed_edit.setVisible(True)
             self.movement_speed_edit.setText(global_saved_parameters['speed_movement'])
-            self.depth_label.setVisible(True)
-            self.depth_edit.setVisible(True)
-            self.depth_edit.setText(global_saved_parameters['cutting_depth'])
             self.dwell_label.setVisible(True)
             self.dwell_edit.setVisible(True)
             self.dwell_edit.setText(global_saved_parameters['downtime'])
@@ -237,6 +234,8 @@ class ToolParametersDialog(QDialog):
             self.total_depth_of_cutting_edit.setVisible(False)
             self.depth_of_cutting_per_pass_label.setVisible(False)
             self.depth_of_cutting_per_pass_edit.setVisible(False)
+            self.probing_depth_label.setVisible(False)
+            self.probing_depth_edit.setVisible(False)
 
         elif current_tool == "plazma":
             #self.plasma_power_label.setVisible(True)
@@ -253,9 +252,6 @@ class ToolParametersDialog(QDialog):
             self.movement_speed_label.setVisible(True)
             self.movement_speed_edit.setVisible(True)
             self.movement_speed_edit.setText(global_saved_parameters['speed_movement'])
-            self.depth_label.setVisible(True)
-            self.depth_edit.setVisible(True)
-            self.depth_edit.setText(global_saved_parameters['cutting_depth'])
             self.probing_depth_label.setVisible(True)
             self.probing_depth_edit.setVisible(True)
             self.probing_depth_edit.setText(global_saved_parameters['probing_depth'])
@@ -299,6 +295,8 @@ class ToolParametersDialog(QDialog):
             self.total_depth_of_cutting_edit.setVisible(False)
             self.depth_of_cutting_per_pass_label.setVisible(False)
             self.depth_of_cutting_per_pass_edit.setVisible(False)
+            self.probing_depth_label.setVisible(False)
+            self.probing_depth_edit.setVisible(False)
 
         elif current_tool == "stożek":
             #self.cone_power_label.setVisible(True)
@@ -314,9 +312,6 @@ class ToolParametersDialog(QDialog):
             self.movement_speed_label.setVisible(True)
             self.movement_speed_edit.setVisible(True)
             self.movement_speed_edit.setText(global_saved_parameters['speed_movement'])
-            self.depth_label.setVisible(True)
-            self.depth_edit.setVisible(True)
-            self.depth_edit.setText(global_saved_parameters['cutting_depth'])
             self.dwell_label.setVisible(True)
             self.dwell_edit.setVisible(True)
             self.dwell_edit.setText(global_saved_parameters['downtime'])
@@ -563,7 +558,7 @@ class RightPart(QWidget):
                 # Pobierz parametry narzędzia od użytkownika
                 cutting_speed = float(dialog.cutting_speed_edit.text())
                 movement_speed = float(dialog.movement_speed_edit.text())
-                depth = float(dialog.depth_edit.text())
+                #depth = float(dialog.depth_edit.text())
                 dwell_time = float(dialog.dwell_edit.text())
                 unit = dialog.unit_edit.text()
                 custom_header = [dialog.header_edit.text()]
@@ -574,7 +569,7 @@ class RightPart(QWidget):
                     interfaces.Gcode,   
                     cutting_speed=cutting_speed,
                     movement_speed=movement_speed,
-                    pass_depth=depth,
+                    pass_depth=0,    # tego nie ma w g kodzie
                     dwell_time=dwell_time,
                     unit=unit,
                     custom_header=custom_header,
@@ -643,7 +638,7 @@ class RightPart(QWidget):
                 # Pobierz parametry narzędzia od użytkownika
                 cutting_speed = float(dialog.cutting_speed_edit.text())
                 movement_speed = float(dialog.movement_speed_edit.text())
-                depth = float(dialog.depth_edit.text())
+                #depth = float(dialog.depth_edit.text())
                 dwell_time = float(dialog.dwell_edit.text())
                 unit = dialog.unit_edit.text()
                 custom_header = [dialog.header_edit.text()]
@@ -654,7 +649,7 @@ class RightPart(QWidget):
                     interfaces.Gcode,
                     cutting_speed=cutting_speed,
                     movement_speed=movement_speed,
-                    pass_depth=depth,
+                    pass_depth=0,     # tego nie ma w g kodzie
                     dwell_time=dwell_time,
                     unit=unit,
                     custom_header=custom_header,
@@ -755,7 +750,7 @@ class RightPart(QWidget):
                 # Pobierz parametry narzędzia od użytkownika
                 cutting_speed = float(dialog.cutting_speed_edit.text())
                 movement_speed = float(dialog.movement_speed_edit.text())
-                depth = float(dialog.depth_edit.text())
+                #depth = float(dialog.depth_edit.text())
                 dwell_time = float(dialog.dwell_edit.text())
                 unit = dialog.unit_edit.text()
                 custom_header = [dialog.header_edit.text()]
@@ -766,7 +761,7 @@ class RightPart(QWidget):
                     interfaces.Gcode,   
                     cutting_speed=cutting_speed,
                     movement_speed=movement_speed,
-                    pass_depth=depth,
+                    pass_depth=0,   # tego nie ma w g kodzie
                     dwell_time=dwell_time,
                     unit=unit,
                     custom_header=custom_header,

@@ -465,6 +465,34 @@ class CustomDialog(QDialog):
 
         conn.close()
 
+class ZoomableGraphicsView(QGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setRenderHints(
+            QPainter.Antialiasing |
+            QPainter.SmoothPixmapTransform |
+            QPainter.TextAntialiasing
+        )
+
+    def wheelEvent(self, event):
+        zoomInFactor = 1.25
+        zoomOutFactor = 1 / zoomInFactor
+
+        # Uzyskanie aktualnych skal
+        oldScale = self.transform().m11()
+
+        # Ograniczenie poziomu zoomu
+        if event.angleDelta().y() > 0:
+            scaleFactor = zoomInFactor
+        else:
+            scaleFactor = zoomOutFactor
+
+        # Nowa skala po zastosowaniu zoomu
+        newScale = oldScale * scaleFactor
+
+        if 0.05 < newScale < 10:  # Ogranicz zakres skalowania np. od 0.05x do 10x
+            self.scale(scaleFactor, scaleFactor)
 
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
@@ -478,7 +506,7 @@ class RightPart(QWidget):
         self.progress_bar.setMinimum(0)
         layout.addWidget(self.progress_bar)
 
-         # ComboBox for layer selection
+        # ComboBox for layer selection
         self.layerComboBox = QComboBox()
         self.layerComboBox.currentIndexChanged.connect(self.display_selected_layer)
         layout.addWidget(self.layerComboBox)  # Add ComboBox right after ProgressBar
@@ -488,8 +516,8 @@ class RightPart(QWidget):
         self.summary_label.setText("Podsumowanie")  # Initial text    
         layout.addWidget(self.summary_label)
 
-        # Graphics View
-        self.graphics_view = QGraphicsView()
+        # Graphics View with zooming capability
+        self.graphics_view = ZoomableGraphicsView()
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
         layout.addWidget(self.graphics_view)
@@ -509,13 +537,6 @@ class RightPart(QWidget):
 
         # Add the button layout to the main vertical layout
         layout.addLayout(button_layout)
-
-        # Create and configure QLabel for summary text
-        # self.summary_label = QLabel()
-        # self.summary_label.setText("Podsumowanie")  # Initial text
-
-        # # Add the summary_label to the existing layout
-        # layout.addWidget(self.summary_label)
 
         # Set the layout for the widget
         self.setLayout(layout)

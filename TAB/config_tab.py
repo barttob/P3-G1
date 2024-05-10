@@ -1,24 +1,152 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, QFormLayout, QMessageBox, QDialogButtonBox, QDialog, QSlider
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, 
+                             QLineEdit, QCheckBox, QComboBox, QSpinBox, QSizePolicy, 
+                             QFormLayout, QMessageBox, QDialog, QSlider, QGraphicsView, 
+                             QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, 
+                             QGraphicsPolygonItem, QDialogButtonBox)
+from PyQt5.QtCore import pyqtSignal, Qt, QPointF, QRectF, QTimer
+from PyQt5.QtGui import QPolygonF, QPainterPath, QPen, QColor, QBrush
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
+import random
+import numpy as np
 import sqlite3
 
-class ConfigTab(QWidget):
+class RectanglePacker:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
 
+    def pack_rectangles(self, rectangles, space, optimization):
+        method = {
+            "BOTTOM_LEFT": self.pack_top_left,
+            "BOTTOM_RIGHT": self.pack_bottom_right,
+            "TOP_LEFT": self.pack_bottom_left,
+            "TOP_RIGHT": self.pack_top_right,
+            "CENTER": self.pack_center,
+            "DONT_ALIGN": self.pack_random
+        }.get(optimization, self.pack_random)
+
+        return method(rectangles, space)
+
+    def pack_bottom_left(self, rectangles, space):
+        positions = []
+        x, y = space, space
+        max_row_height = 0
+        for w, h in rectangles:
+            if x + w + space > self.width:
+                x = space
+                y += max_row_height + space
+                max_row_height = 0
+            if y + h + space > self.height:
+                break
+            positions.append((x, y, w, h))
+            x += w + space
+            max_row_height = max(max_row_height, h)
+        return positions
+
+    def pack_bottom_right(self, rectangles, space):
+        positions = []
+        x, y = self.width - space, self.height - space
+        max_row_height = 0
+        for w, h in rectangles:
+            if x - w - space < 0:
+                x = self.width - space
+                y -= max_row_height + space
+                max_row_height = 0
+            if y - h - space < 0:
+                break
+            positions.append((x - w, y - h, w, h))
+            x -= w + space
+            max_row_height = max(max_row_height, h)
+        return positions
+
+    def pack_top_left(self, rectangles, space):
+        positions = []
+        x = space
+        max_row_height = 0
+        # Initialize y after knowing what h is
+        for w, h in rectangles:
+            y = self.height - space - h
+            if x + w + space > self.width:
+                x = space
+                y -= max_row_height + space
+                max_row_height = 0
+            if y < 0:
+                break
+            positions.append((x, y, w, h))
+            x += w + space
+            max_row_height = max(max_row_height, h)
+        return positions
+
+    def pack_top_right(self, rectangles, space):
+        positions = []
+        x, y = self.width - space, space  # Start from the top-right corner
+        max_row_height = 0
+        for w, h in rectangles:
+            if x - w - space < 0:
+                x = self.width - space
+                y += max_row_height + space
+                max_row_height = 0
+            if y + h + space > self.height:
+                break
+            positions.append((x - w, y, w, h))
+            x -= w + space
+            max_row_height = max(max_row_height, h)
+        return positions
+
+    def pack_center(self, rectangles, space):
+        positions = []
+        x, y = (self.width // 2), (self.height // 2)
+        row_width = 0
+        max_row_height = 0
+        for w, h in rectangles:
+            if row_width + w + space > self.width:
+                x = (self.width // 2)
+                y += max_row_height + space
+                max_row_height = 0
+                row_width = 0
+            if y + h + space > self.height:
+                break
+            positions.append((x, y, w, h))
+            x += w + space
+            row_width += w + space
+            max_row_height = max(max_row_height, h)
+        return positions
+
+    def pack_random(self, rectangles, space):
+        positions = []
+        for w, h in rectangles:
+            # Ensure the range for random.randint is integer by converting bounds to integers
+            x = random.randint(int(space), int(self.width - w - space))
+            y = random.randint(int(space), int(self.height - h - space))
+            positions.append((x, y, w, h))
+        return positions
+
+class ConfigTab(QWidget):
     def __init__(self, right_part):
         super().__init__()
         self.right_part = right_part
-        main_layout = QHBoxLayout()
-        self.setLayout(main_layout)     
-        self.tool_parameters = {}  
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
+        self.tool_parameters = {}
 
-        # Lewa połowa 
-        left_half = QWidget(self)
-        left_half.setStyleSheet("background-color: rgb(142, 191, 250);")
-        left_layout = QVBoxLayout(left_half)
-        main_layout.addWidget(left_half, stretch=20)        
+        self.setup_left_side()
+        self.setup_right_side()
 
-        # QFormLayout dla równego ułożenia pól
+        # Ensure the initial update happens after layout is adjusted
+        QTimer.singleShot(0, self.update_visualization)
+  
+
+    def setup_left_side(self):
+        
+
+        # Lewa połowa - setup z kolorem tła i layoutem
+        self.left_half = QWidget(self)
+        self.left_half.setStyleSheet("background-color: rgb(142, 191, 250);")
+        left_layout = QVBoxLayout(self.left_half)
+        
+        # Dodaj lewą połowę do głównego układu z 30% przestrzeni
+        self.main_layout.addWidget(self.left_half, stretch=3)
+
         form_layout = QFormLayout()
         left_layout.addLayout(form_layout)
 
@@ -59,8 +187,11 @@ class ConfigTab(QWidget):
         self.space_between_objects_lineedit.setFixedWidth(100)
         self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
         self.space_between_objects_lineedit.setReadOnly(True)  # Set initially read-only
+        
+        # Connect the line edit's textChanged signal to the method that updates the visualization
+        self.space_between_objects_lineedit.textChanged.connect(self.update_visualization)
 
-        form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)  # Dodanie etykiety i pola tekstowego do form_layout
+        form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)
 
         form_layout.addRow(QLabel(""))
         form_layout.addRow(QLabel(""))
@@ -138,6 +269,7 @@ class ConfigTab(QWidget):
         self.optimization_combobox.setFixedWidth(130)
         self.optimization_combobox.setStyleSheet("background-color: white;")
         form_layout.addRow(label_optimization, self.optimization_combobox)
+        self.optimization_combobox.currentIndexChanged.connect(self.update_visualization)
         form_layout.addRow(QLabel(""))
 
         # Początkowy punkt
@@ -179,85 +311,14 @@ class ConfigTab(QWidget):
 
         form_layout.addRow(QLabel(""))
 
-        # Toleracja krzywizny
-        # label_tolerance = QLabel("Toleracja krzywizny:")
-        # label_tolerance.setStyleSheet("font-size: 12px;")
-        # self.tolerance_lineedit = QLineEdit()
-        # self.tolerance_lineedit.setFixedWidth(100)
-        # self.tolerance_lineedit.setStyleSheet("background-color: white;")
-        # form_layout.addRow(label_tolerance, self.tolerance_lineedit)
-
-        # form_layout.addRow(QLabel(""))
-
-        # Użyj przybliżenia krawędzi
-        # use_edge_label = QLabel("Użyj przybliżenia krawędzi:")
-        # use_edge_label.setStyleSheet("font-size: 12px;")
-        # use_edge_checkbox = QCheckBox()
-        # use_edge_checkbox.setCheckState(Qt.Unchecked)
-        # form_layout.addRow(use_edge_label, use_edge_checkbox)
-
-        # form_layout.addRow(QLabel(""))
-
-        # Liczba rdzeni
-        # label_cores = QLabel("Liczba rdzeni procesora:")
-        # label_cores.setStyleSheet("font-size: 12px;")
-        # cores_spinbox = QSpinBox()
-        # cores_spinbox.setFixedWidth(100)
-        # cores_spinbox.setStyleSheet("background-color: white;")
-        # form_layout.addRow(label_cores, cores_spinbox)
-
-
-        # form_layout.addRow(QLabel(""))
-        # form_layout.addRow(QLabel(""))
-
-        # Konfiguracja narzędzi
-        #label_toolsConfiguration = QLabel("<b>Konfiguracja narzędzi:<b>")
-        #label_toolsConfiguration.setStyleSheet("font-size: 16px;")
-        #form_layout.addRow(label_toolsConfiguration)
-
-        #form_layout.addRow(QLabel(""))
-        
-
-        
-        # Rodzaj narzędzia
-        #label_typeoftool = QLabel("Rodzaj narzędzia:")
-        #label_typeoftool.setStyleSheet("font-size: 12px;")
-        #self.tolerance_lineedit = QLineEdit()
-        #self.tolerance_lineedit.setFixedWidth(100)
-        #self.tolerance_lineedit.setStyleSheet("background-color: white;")
-        #form_layout.addRow(label_typeoftool, self.tolerance_lineedit)
-
-        #form_layout.addRow(QLabel(""))
-
-        # Checkbox to enable/disable editing
-        #self.spacing_checkbox = QCheckBox("Ręczna regulacja przestrzeni")
-        #self.spacing_checkbox.setChecked(False)  # Initially unchecked
-        #self.spacing_checkbox.stateChanged.connect(self.toggle_spacing_editable)
-        #form_layout.addRow(self.spacing_checkbox)  # Add checkbox to toggle edit mode
-
-        # Przestrzeń między obiektami
-        #self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami:")
-        #self.label_spacebetweenobjects.setStyleSheet("font-size: 12px;")
-        #self.space_between_objects_lineedit = QLineEdit()
-        #self.space_between_objects_lineedit.setFixedWidth(100)
-        #self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
-        #self.space_between_objects_lineedit.setReadOnly(True)  # Set initially read-only
-        
-        #form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)
+ 
 
         # Call toggle_spacing_editable initially to set correct style
         self.toggle_spacing_editable(self.spacing_checkbox.isChecked())
         
         form_layout.addRow(QLabel(""))
 
-        # Scal wspólne krawędzie
-        # use_mergecommonedges = QLabel("Scal wspólne krawędzie:")
-        # use_mergecommonedges.setStyleSheet("font-size: 12px;")
-        # use_edge_checkbox = QCheckBox()
-        # use_edge_checkbox.setCheckState(Qt.Unchecked)
-        # form_layout.addRow(use_mergecommonedges, use_edge_checkbox)
 
-        # form_layout.addRow(QLabel(""))
 
         # Regulacja heurystyczna
         label_hardwareConfiguration = QLabel("<b>Regulacja heurystyczna:<b>")
@@ -310,26 +371,71 @@ class ConfigTab(QWidget):
         self.submit_button.clicked.connect(self.submit_value)
         form_layout.addRow(self.submit_button)
 
-        # Prawa połowa (biała)
-        right_half = QWidget(self)
-        right_half.setStyleSheet("background-color: white;")
-        right_layout = QVBoxLayout(right_half)
-        label_right = QLabel("Tu będą ustawienia konfiguracyjne - prawa połowa")
-        right_layout.addWidget(label_right)
-        right_half.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
-        main_layout.addWidget(right_half, stretch=80)
-
-        layout = QVBoxLayout()
-        #self.setLayout(layout)
-
-        label = QLabel("Prawa strona ustawień konfiguracyjnych")
-        layout.addWidget(label)
+        
         # Automatyczne wczytanie domyślnej konfiguracji przy uruchomieniu
         self.auto_load_default_configuration()
         self.initialize_default_tool_parameters()
         self.auto_save_parameters()
         self.submit_value()
 
+    def setup_right_side(self):
+        self.right_half = QWidget(self)
+        self.right_half.setStyleSheet("background-color: white;")
+        right_layout = QVBoxLayout(self.right_half)
+        self.main_layout.addWidget(self.right_half, stretch=7)
+
+        self.scene = QGraphicsScene()
+        self.view = QGraphicsView(self.scene)
+        right_layout.addWidget(self.view)
+        self.view.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        self.initialize_scene()
+
+    def initialize_scene(self):
+        # Adjust scene rect to match the view's interior size
+        self.view.setSceneRect(0, 0, self.view.width(), self.view.height())
+        self.scene.setSceneRect(0, 0, self.view.width(), self.view.height())
+
+        border = QGraphicsRectItem(0, 0, self.view.width(), self.view.height())
+        border.setPen(QPen(QColor(0, 0, 0), 2))
+        self.scene.addItem(border)
+
+    def resizeEvent(self, event):
+        # Update the scene rectangle when the view is resized
+        if self.scene and self.view:
+            rect = self.view.rect()
+            self.scene.setSceneRect(0, 0, rect.width(), rect.height())
+            self.view.setSceneRect(0, 0, rect.width(), rect.height())
+        super(ConfigTab, self).resizeEvent(event)
+
+    def update_visualization(self):
+        if not hasattr(self, 'scene'):
+            return  # Prevent access before scene is set up
+
+        self.scene.clear()
+        try:
+            space = max(float(self.space_between_objects_lineedit.text()), 0)
+        except ValueError:
+            space = 0
+
+        optimization = self.optimization_combobox.currentText()
+        rectangles = [(random.randint(20, 60), random.randint(20, 60)) for _ in range(10)]
+        packer = RectanglePacker(self.view.width() - 4, self.view.height() - 4)
+        positions = packer.pack_rectangles(rectangles, space, optimization)
+
+        for x, y, w, h in positions:
+            rect = QGraphicsRectItem(x, y, w, h)
+            rect.setBrush(QBrush(QColor(random.randint(100, 255), random.randint(100, 255), random.randint(100, 255), 150)))
+            rect.setPen(QPen(QColor(0, 0, 0), 1))
+            self.scene.addItem(rect)
+
+
+    def trigger_visual_update(self):
+        self.update_visualization()
+
+
+
+      
     def set_default_values(self):
         
         self.explore_holes_checkbox.setChecked(False)
@@ -652,26 +758,7 @@ class ConfigTab(QWidget):
             for tool_to_remove in tools_to_remove:
                 self.tool_parameters.pop(tool_to_remove)
 
-        # Wyświetl kolejne okno dialogowe z zawartością słownika
-       #self.display_dictionary_dialog(self.saved_parameters)
 
-   #def display_dictionary_dialog(self, saved_params):
-        # Utwórz nowe okno dialogowe
-       #dictionary_dialog = QDialog()
-       #layout = QFormLayout(dictionary_dialog)
-
-        # Wyświetl zawartość słownika
-       #for key, value in saved_params.items():
-           #label = QLabel(key)
-           #field = QLabel(str(value))
-           #layout.addRow(label, field)
-
-       #dictionary_dialog.exec_()
-
-
-
-        # Przekazanie parametrów do right part
-        #self.right_part.sended_tool_param(self.saved_parameters)
 
     def submit_value(self):
         # Sprawdź, czy saved_parameters nie jest puste
@@ -713,8 +800,7 @@ class ConfigTab(QWidget):
         # Przekazanie parametrów ustawień narzędzia do right part do funkcji
         self.right_part.sended_tool_param(self.saved_parameters)
 
-        # Wywołanie funkcji służącej do automatycznego ustawiania szerokosći pomiędzy obiektami na podstawie wybranego narzędzia
-        #self.right_part.update_space_between_object(self, self.save_parameters['type_tool'])
+ 
 
         QMessageBox.information(self, "Success", "Configuration updated successfully.")
     
@@ -722,21 +808,16 @@ class ConfigTab(QWidget):
         # Metoda wywoływana za każdym razem, gdy wartość suwaka się zmienia
         self.rotations_value_label.setText(str(value))
 
-    #def update_space_between_objects(self, index):
-    #    if index == 0:  # Laser
-    #        self.space_between_objects_lineedit.setText("0.3")
-    #    elif index == 1:  # Plazma
-    #        self.space_between_objects_lineedit.setText("4")
-    #    elif index == 2:  # Stożkowy
-    #        self.space_between_objects_lineedit.setText("20")
+
     
     def toggle_spacing_editable(self, state):
         if state == Qt.Checked:
             self.space_between_objects_lineedit.setReadOnly(False)
-            self.space_between_objects_lineedit.setStyleSheet("background-color: white;")  # Set editable background color
+            self.space_between_objects_lineedit.setStyleSheet("background-color: white;")
         else:
             self.space_between_objects_lineedit.setReadOnly(True)
-            self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")  # Set read-only background color
+            self.space_between_objects_lineedit.setStyleSheet("background-color: lightgrey;")
+
 
     def load_selected_configuration(self):
         # Pobranie wybranego indeksu z listy rozwijanej

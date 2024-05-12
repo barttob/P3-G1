@@ -1161,10 +1161,9 @@ class RightPart(QWidget):
         min_area_index = -1
         
 
-        
+        last_collision_count = 0
         for index, rotation in enumerate(rotations):
             await asyncio.sleep(0)
-            # collisions_at_rotation = []
             if self.stop_requested:
                 print("Nesting process stopped.")
                 self.stop_requested = False
@@ -1189,7 +1188,7 @@ class RightPart(QWidget):
 
             # Initialize summary text
             col_summary_text = ""
-            collision_count = 0
+            summary_report = ""
             # List to store collision pairs
             seen_collisions = set()
 
@@ -1204,26 +1203,25 @@ class RightPart(QWidget):
                         if collision_pair not in seen_collisions:
                             seen_collisions.add(collision_pair)
                             print(f"Collision detected between item {i} and item {j}")
-                            collision_count += 1
-                            # Handle collision here, e.g., marking items or taking action
+                            # collision_count += 1
+                            last_collision_count = len(seen_collisions)
                         else:
                             print(f"No collisions detected")
-            if collision_count == 0:
-                print("Summary: No collisions detected")
-                col_summary_text += "Summary: No collisions detected\n"
+            # Update collision report if new collisions were detected
+            if last_collision_count == 0:
+                # No new collisions detected, maintain previous report
+                col_summary_text = "No collisions detected\n"
                 self.summary_label.setStyleSheet("color: green")
             else:
-                print(f"Summary: Total {collision_count} collision(s) detected")
-                col_summary_text += f"Total {collision_count} collision(s) detected. Consider removing some of nested items.\n"
-                # Generate detailed collision report
-                col_summary_text += "Detailed Collision Report:\n"
-                for pair in seen_collisions:
-                    col_summary_text += f"  - Object {pair[0] + 1} collided with Object {pair[1] + 1}\n"
-                self.summary_label.setStyleSheet("color: red")
-
+                # Col detected
+                if last_collision_count > 0:
+                    col_summary_text = f"Number of collisions detected: {last_collision_count}.\nConsider removing some of the nested objects"
+                    summary_report += "Detailed Collision Report:\n"
+                    for pair in seen_collisions:
+                        summary_report += f"  - Object {pair[0] + 1} collided with Object {pair[1] + 1} in nesting version {index + 1}\n "
+                    self.summary_label.setStyleSheet("color: red")
             # Update the summary_label with the generated summary text
             self.summary_label.setText(col_summary_text)
-            
 
             for i, item in enumerate(self.inputPoints):
                 await asyncio.sleep(0)
@@ -1357,8 +1355,6 @@ class RightPart(QWidget):
             for i, item in enumerate(parsed_objects):
                 print(f"Obiekt {i + 1}: {item.area()}")  # Wyświetlanie powierzchni każdego obiektu
             return True
-
-
     
     def generate_gcode(self):
         # Open the tool parameters dialog

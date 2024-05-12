@@ -181,7 +181,7 @@ class ConfigTab(QWidget):
         form_layout.addRow(QLabel(""))
 
         # Przestrzeń między obiektami
-        self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami:")
+        self.label_spacebetweenobjects = QLabel("Przestrzeń między obiektami (mm):")
         self.label_spacebetweenobjects.setStyleSheet("font-size: 12px;")
         self.space_between_objects_lineedit = QLineEdit()
         self.space_between_objects_lineedit.setFixedWidth(100)
@@ -767,7 +767,7 @@ class ConfigTab(QWidget):
             return
 
         # Get the text from line edits and comboboxes
-        space_between_objects_text = self.space_between_objects_lineedit.text()
+        space_between_objects_text = float(self.space_between_objects_lineedit.text()) * 10
         accuracy_text = self.accuracy_lineedit.text()
 
 

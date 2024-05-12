@@ -12,7 +12,7 @@ from ezdxf import readfile
 import xml.etree.ElementTree as ET
 import svg.path
 import numpy as np
-from svg.path import parse_path
+from svg.path import parse_path, Line, Move, Close, CubicBezier, QuadraticBezier, Arc
 from TAB.config_tab import ConfigTab
 from TAB.main_tab.right_part import RightPart
 from ezdxf.addons import odafc
@@ -52,6 +52,7 @@ class LeftPart(QWidget):
         # Inicjalizacja interfejsu użytkownika
         self.initUI()
         self.file_path_send = []
+        self.svg_to_mm = 0.352777778
         self.right_part = RightPart()
 
     def initUI(self):
@@ -294,9 +295,41 @@ class LeftPart(QWidget):
                     row_position = self.table.rowCount()
                     self.table.insertRow(row_position)
 
-                    self.table.setCellWidget(row_position, 0, figure_canvas)
-                    self.table.setItem(row_position, 1, QTableWidgetItem('SVG Path'))
                     path_data = ' '.join(ET.tostring(path, encoding='unicode') for path in group)
+                    start_index = path_data.find('d="') + 3
+                    end_index = path_data.find('"', start_index)
+                    path_string = path_data[start_index:end_index]
+                    path = parse_path(path_string)
+                    min_x, min_y, max_x, max_y = float('inf'), float('inf'), float('-inf'), float('-inf')
+
+                    for segment in path:
+                        if isinstance(segment, (Line, Move, Close)):
+                            # Check points for line-type segments
+                            points = [segment.start, segment.end]
+                        elif isinstance(segment, (CubicBezier, QuadraticBezier)):
+                            # Check points for bezier curves
+                            points = [segment.start, segment.control1, segment.end] if isinstance(segment, CubicBezier) else [segment.start, segment.control, segment.end]
+                        elif isinstance(segment, Arc):
+                            # For Arc, you may approximate or directly use start and end
+                            points = [segment.start, segment.end]
+                        else:
+                            continue
+                        
+                        # Update the min/max values
+                        for point in points:
+                            min_x = min(min_x, point.real)
+                            max_x = max(max_x, point.real)
+                            min_y = min(min_y, point.imag)
+                            max_y = max(max_y, point.imag)
+
+                    width = int((max_x - min_x) * self.svg_to_mm)
+                    height = int((max_y - min_y) * self.svg_to_mm)
+
+                    # print(f"Width: {width}, Height: {height}")
+
+
+                    self.table.setCellWidget(row_position, 0, figure_canvas)
+                    self.table.setItem(row_position, 1, QTableWidgetItem(f"{width} mm x {height} mm"))
                     self.table.setItem(row_position, 2, QTableWidgetItem(path_data))
 
                     # Wyśrodkowanie QCheckBox

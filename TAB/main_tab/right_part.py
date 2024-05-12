@@ -30,6 +30,7 @@ from PyQt5.QtGui import QColor, QPen  # Import QPen here
 from PyQt5.QtCore import Qt, QPointF, QLineF
 import asyncio
 from qasync import asyncSlot
+import re
 
 
 
@@ -474,6 +475,7 @@ class ZoomableGraphicsView(QGraphicsView):
             QPainter.SmoothPixmapTransform |
             QPainter.TextAntialiasing
         )
+        self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
 
     def wheelEvent(self, event):
         zoomInFactor = 1.25
@@ -493,6 +495,9 @@ class ZoomableGraphicsView(QGraphicsView):
 
         if 0.05 < newScale < 10:  # Ogranicz zakres skalowania np. od 0.05x do 10x
             self.scale(scaleFactor, scaleFactor)
+    
+    def resetZoom(self):
+        self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
 
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
@@ -1174,7 +1179,7 @@ class RightPart(QWidget):
             self.progress_bar.setValue(index)
 
             # Prepare plot for visualization
-            fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
+            fig = Figure(figsize=(self.volume.width() / 10 / 72, self.volume.height() / 10 / 72), tight_layout={'pad': 0})
             ax = fig.add_subplot(111)
             ax.set_aspect('equal')
             ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
@@ -1242,10 +1247,7 @@ class RightPart(QWidget):
 
                 parsed_path = parse_path(returned_svg_points[i])
                 item.resetTransformation()
-
-                parsed_path = parse_path(returned_svg_points[i])
-                item.resetTransformation()
-
+                x_points, y_points = [], []
                 for segment in parsed_path:
                     await asyncio.sleep(0)
                     x_points, y_points = [], []
@@ -1304,6 +1306,8 @@ class RightPart(QWidget):
                 # Zapisz SVG
                 svg_filename = "output.svg"
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+                self.graphics_view.resetZoom()
+
         self.update_combobox_with_best_configurations()
         if min_area_index != -1:
             print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")

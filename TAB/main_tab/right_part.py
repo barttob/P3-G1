@@ -31,6 +31,9 @@ from PyQt5.QtCore import Qt, QPointF, QLineF
 import asyncio
 from qasync import asyncSlot
 import re
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import MultipleLocator, FuncFormatter
 
 
 
@@ -1187,6 +1190,28 @@ class RightPart(QWidget):
             ax.set_xticks([])
             ax.set_yticks([])
 
+            # Draw X and Y axis plot
+            ax.plot([0, width], [0, 0], 'k-')  # Draw bottom edge line with ticks
+
+            # Set major tick spacing and format tick labels with mm units
+            major_tick_spacing = 100  # Set major tick spacing to 100 mm
+            # Set tick positions and labels for better visibility
+            ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
+            ax.xaxis.set_major_formatter(FuncFormatter(self.format_x_ticks))
+
+            # Set tick parameters and labels for better visibility
+            ax.tick_params(axis='both', labelsize=12)
+
+            # Set tick positions and labels for Y-axis
+            ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
+            ax.tick_params(axis='y', labelsize=12)  # Set Y-axis tick label size
+            ax.yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
+            ax.yaxis.set_major_formatter(FuncFormatter(self.format_y_ticks))
+            # Draw line with grid (tick marks) for left (Y-axis) edge
+            ax.plot([0, 0], [-height / 2, height / 2], 'k-')  # Draw left edge line
+
             min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
 
             best_area = float('inf')
@@ -1363,3 +1388,11 @@ class RightPart(QWidget):
     def generate_gcode(self):
         # Open the tool parameters dialog
         self.open_tool_parameters_dialog_right()
+    
+    def format_x_ticks(self, x, pos):
+        scaled_value = x / 100
+        return f'{int(scaled_value)} mm' if scaled_value % 10 == 0 else ''
+
+    def format_y_ticks(self, y, pos):
+        scaled_value = y / 100
+        return f'{int(scaled_value)} mm' if scaled_value % 10 == 0 else ''

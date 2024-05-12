@@ -656,7 +656,6 @@ class LeftPart(QWidget):
                 if width > 0 and height > 0:
                     # Wywołanie metody wyświetlającej pliki, ponieważ pola są poprawnie uzupełnione
                     asyncio.ensure_future(self.right_part.display_file(self.file_path_send, width, height, checked_paths))
-
                 else:
                     QMessageBox.warning(self, "Błąd", "Szerokość i wysokość muszą być większe od zera.")
             else:

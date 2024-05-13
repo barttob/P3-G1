@@ -175,7 +175,6 @@ class InfoTab(QWidget):
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
                     self.current_pos = (new_x, new_y)
-                print("prev: ", prev_x, prev_y) 
                 prev_x, prev_y = new_x, new_y
             elif 'Y' in params:
                 new_x = params.get('X', self.current_pos[0])
@@ -198,9 +197,7 @@ class InfoTab(QWidget):
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
                     self.current_pos = (new_x, new_y)
-                print("prev: ", prev_x, prev_y) 
                 prev_x, prev_y = new_x, new_y
-            print("new: ", new_x, new_y)
             # if i == lines_to_visualize - 1:
             #     circle_pen = QPen(Qt.black)
             #     circle_brush = QBrush(Qt.black)

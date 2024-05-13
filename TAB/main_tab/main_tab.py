@@ -5,7 +5,7 @@ from TAB.main_tab.right_part import RightPart
 from TAB.config_tab import ConfigTab
 
 class MainTab(QWidget):
-    def __init__(self):
+    def __init__(self, change_tab_func):
         super().__init__()
 
         main_layout = QVBoxLayout()
@@ -16,12 +16,12 @@ class MainTab(QWidget):
         main_layout.addLayout(first_row_layout)
 
         # First part (left)
-        left_part = LeftPart()
+        left_part = LeftPart(change_tab_func)
         first_row_layout.addWidget(left_part)
         left_part.setFixedWidth(440)
 
         # Second part (right)
-        right_part = RightPart()
+        right_part = RightPart(change_tab_func)
         first_row_layout.addWidget(right_part)
 
         # Second row layout

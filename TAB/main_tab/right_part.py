@@ -381,13 +381,15 @@ class CombinedConfig:
 
 
 class CustomDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, change_tab_func, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle("Generated G-code")
         self.setGeometry(100, 100, 800, 600)
 
         layout = QVBoxLayout()
+
+        self.change_tab_func = change_tab_func
 
         self.text_edit = QTextEdit()
         layout.addWidget(self.text_edit)
@@ -415,8 +417,8 @@ class CustomDialog(QDialog):
         self.text_edit.setText(generated_gcode)
 
     def simulate_clicked(self):
-        # Tutaj możesz dodać logikę dla przycisku "Symuluj"
-        pass
+        self.change_tab_func(2, self.text_edit.toPlainText())
+        self.close()
 
     def save_clicked(self):
         file_dialog = QFileDialog()
@@ -505,10 +507,11 @@ class ZoomableGraphicsView(QGraphicsView):
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
     
-    def __init__(self):
+    def __init__(self, change_tab_func):
         super().__init__()
         layout = QVBoxLayout()  # Layout to arrange widgets vertically
 
+        self.change_tab_func = change_tab_func
         # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
@@ -581,7 +584,7 @@ class RightPart(QWidget):
             if (global_saved_parameters['type_tool']) == "laser":
 
                 # Tworzenie i konfiguracja okna dialogowego
-                custom_dialog = CustomDialog()
+                custom_dialog = CustomDialog(self.change_tab_func)
                 custom_dialog.setModal(True)
 
                 # Pobierz parametry narzędzia od użytkownika
@@ -1133,7 +1136,9 @@ class RightPart(QWidget):
         if 0 <= index < len(self.figures):
             fig = self.figures[index]
             svg_filename = "output.svg"  # Stała nazwa pliku
+            fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
             fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+            fig.set_size_inches(8, 8)
             print(f"SVG version '{index + 1}' saved as '{svg_filename}'.")  
 
     async def display_file(self, file_paths, width, height, checked_paths):
@@ -1182,7 +1187,7 @@ class RightPart(QWidget):
             self.progress_bar.setValue(index)
 
             # Prepare plot for visualization
-            fig = Figure(figsize=(self.volume.width() / 10 / 72, self.volume.height() / 10 / 72), tight_layout={'pad': 0})
+            fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
             ax = fig.add_subplot(111)
             ax.set_aspect('equal')
             ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
@@ -1287,11 +1292,11 @@ class RightPart(QWidget):
                     
                     if collides:
                         # Draw highlighted colliding items
-                        ax.plot(x_points, y_points, color='red', linewidth=1)  # Example: red color for colliding items
+                        ax.plot(x_points, y_points, color='red', linewidth=((self.volume.width() + self.volume.height()) / 20000))  # Example: red color for colliding items
                         # Add text annotation with object number
                     else:
                         # Draw normally for non-colliding items
-                        ax.plot(x_points, y_points, color='black', linewidth=1)
+                        ax.plot(x_points, y_points, color='black', linewidth=((self.volume.width() + self.volume.height()) / 20000))
 
                     min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
                     min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
@@ -1330,8 +1335,10 @@ class RightPart(QWidget):
 
                 # Zapisz SVG
                 svg_filename = "output.svg"
+                fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-                self.graphics_view.resetZoom()
+                fig.set_size_inches(8, 8)
+            self.graphics_view.resetZoom()
 
         self.update_combobox_with_best_configurations()
         if min_area_index != -1:

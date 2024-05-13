@@ -46,14 +46,14 @@ class CenteredSpinBox(QWidget):
         self.setLayout(self.layout)
 
 class LeftPart(QWidget):
-    def __init__(self):
+    def __init__(self, change_tab_func):
         super().__init__()
 
         # Inicjalizacja interfejsu użytkownika
         self.initUI()
         self.file_path_send = []
         self.svg_to_mm = 0.352777778
-        self.right_part = RightPart()
+        self.right_part = RightPart(change_tab_func)
 
     def initUI(self):
         # Ustawienie layoutu pionowego

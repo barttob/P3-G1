@@ -18,18 +18,22 @@ class MainWindow(QMainWindow):
         self.setGeometry(screen_geometry)
         self.showFullScreen()
 
-        right_part = RightPart()
+        right_part = RightPart(self.change_tab)
 
-        tab_widget = QTabWidget()
-        main_tab = MainTab()
+        self.tab_widget = QTabWidget()
+        main_tab = MainTab(self.change_tab)
         config_tab = ConfigTab(right_part)  # Komunikacja miedzy klasami
-        info_tab = InfoTab()
+        self.info_tab = InfoTab()
 
-        tab_widget.addTab(main_tab, "Main")
-        tab_widget.addTab(config_tab, "Konfiguracja nestingu")
-        tab_widget.addTab(info_tab, "Wizualizacja")
+        self.tab_widget.addTab(main_tab, "Main")
+        self.tab_widget.addTab(config_tab, "Konfiguracja nestingu")
+        self.tab_widget.addTab(self.info_tab, "Wizualizacja")
 
-        self.setCentralWidget(tab_widget)
+        self.setCentralWidget(self.tab_widget)
+    
+    def change_tab(self, tab_index, gcode_text):
+        self.tab_widget.setCurrentIndex(tab_index)
+        self.info_tab.set_gcode_text(gcode_text)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

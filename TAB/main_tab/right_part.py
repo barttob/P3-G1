@@ -1206,14 +1206,17 @@ class RightPart(QWidget):
             ax.xaxis.set_major_formatter(FuncFormatter(self.format_x_ticks))
 
             # Set tick parameters and labels for better visibility
-            ax.tick_params(axis='both', labelsize=12)
+            ax.tick_params(axis='both', labelsize=10)
 
             # Set tick positions and labels for Y-axis
             ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
-            ax.tick_params(axis='y', labelsize=12)  # Set Y-axis tick label size
+            ax.tick_params(axis='y', labelsize=10)  # Set Y-axis tick label size
             ax.yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
             ax.yaxis.set_major_formatter(FuncFormatter(self.format_y_ticks))
+            # Adjust tick length specifically for major ticks on Y-axis
+            ax.tick_params(axis='y', which='major', length=8)
+            ax.tick_params(axis='x', which='major', length=8)
             # Draw line with grid (tick marks) for left (Y-axis) edge
             # ax.plot([0, height], 'k-')  # Draw left edge line
 

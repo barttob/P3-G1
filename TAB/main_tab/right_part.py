@@ -1191,7 +1191,7 @@ class RightPart(QWidget):
             ax.set_yticks([])
 
             # Draw X and Y axis plot
-            ax.plot([0, width], [0, 0], 'k-')  # Draw bottom edge line with ticks
+            # ax.plot([0, width], 'k-')  # Draw bottom edge line with ticks
 
             # Set major tick spacing and format tick labels with mm units
             major_tick_spacing = 100  # Set major tick spacing to 100 mm
@@ -1210,7 +1210,7 @@ class RightPart(QWidget):
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
             ax.yaxis.set_major_formatter(FuncFormatter(self.format_y_ticks))
             # Draw line with grid (tick marks) for left (Y-axis) edge
-            ax.plot([0, 0], [-height / 2, height / 2], 'k-')  # Draw left edge line
+            # ax.plot([0, height], 'k-')  # Draw left edge line
 
             min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
 

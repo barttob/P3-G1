@@ -39,21 +39,21 @@ class CenteredSpinBox(QWidget):
         self.layout = QHBoxLayout(self)
         self.spin_box = QSpinBox()
         self.spin_box.setMinimum(0)  # Ustaw minimalną wartość
-        self.spin_box.setMaximum(100)  # Ustaw maksymalną wartość (dostosuj do swoich potrzeb)
+        self.spin_box.setMaximum(99999)  # Ustaw maksymalną wartość (dostosuj do swoich potrzeb)
         self.layout.addWidget(self.spin_box)
         self.layout.setAlignment(Qt.AlignCenter)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
 class LeftPart(QWidget):
-    def __init__(self):
+    def __init__(self, change_tab_func):
         super().__init__()
 
         # Inicjalizacja interfejsu użytkownika
         self.initUI()
         self.file_path_send = []
         self.svg_to_mm = 0.352777778
-        self.right_part = RightPart()
+        self.right_part = RightPart(change_tab_func)
 
     def initUI(self):
         # Ustawienie layoutu pionowego
@@ -102,7 +102,7 @@ class LeftPart(QWidget):
 
 
         # Ustawienie nagłówków tabeli
-        headers = ['Wizualizacja', 'Typ', 'Dane', 'Zaznacz', 'Ilość']
+        headers = ['Wizualizacja', 'Wymiary', 'Dane', 'Zaznacz', 'Ilość']
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.setColumnHidden(2, True)

@@ -92,6 +92,11 @@ class InfoTab(QWidget):
 
             self.visualize_gcode(self.gcode_text)
 
+    def set_gcode_text(self, gcode_text):
+        # Set the G-code text and visualize it
+        self.gcode_text = gcode_text
+        self.visualize_gcode(gcode_text)
+
     def visualize_gcode(self, gcode_text, progress=100):
         self.slider.setEnabled(bool(self.gcode_text))
         # Clear the current scene
@@ -157,8 +162,8 @@ class InfoTab(QWidget):
             if 'X' in params:
                 new_x = params['X']
                 new_y = params.get('Y', self.current_pos[1])
-                new_x = new_x / 10
-                new_y = new_y / 10
+                new_x = new_x / 100
+                new_y = new_y / 100
 
                 if prev_x != new_x or prev_y != new_y:
                     if solid_line:
@@ -175,13 +180,12 @@ class InfoTab(QWidget):
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
                     self.current_pos = (new_x, new_y)
-                print("prev: ", prev_x, prev_y) 
                 prev_x, prev_y = new_x, new_y
             elif 'Y' in params:
                 new_x = params.get('X', self.current_pos[0])
                 new_y = params['Y']
-                new_x = new_x / 10
-                new_y = new_y / 10
+                new_x = new_x / 100
+                new_y = new_y / 100
 
                 if prev_x != new_x or prev_y != new_y:
                     if solid_line:
@@ -198,9 +202,7 @@ class InfoTab(QWidget):
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
                     self.current_pos = (new_x, new_y)
-                print("prev: ", prev_x, prev_y) 
                 prev_x, prev_y = new_x, new_y
-            print("new: ", new_x, new_y)
             # if i == lines_to_visualize - 1:
             #     circle_pen = QPen(Qt.black)
             #     circle_brush = QBrush(Qt.black)
@@ -234,8 +236,8 @@ class InfoTab(QWidget):
             if 'X' in params:
                 new_x = params['X']
                 new_y = params.get('Y', self.current_pos[1])
-                new_x = new_x / 10
-                new_y = new_y / 10
+                new_x = new_x / 100
+                new_y = new_y / 100
 
                 if prev_x != new_x or prev_y != new_y:
                     if solid_line:
@@ -256,8 +258,8 @@ class InfoTab(QWidget):
             elif 'Y' in params:
                 new_x = params.get('X', self.current_pos[0])
                 new_y = params['Y']
-                new_x = new_x / 10
-                new_y = new_y / 10
+                new_x = new_x / 100
+                new_y = new_y / 100
 
                 if prev_x != new_x or prev_y != new_y:
                     if solid_line:

@@ -1164,7 +1164,7 @@ class RightPart(QWidget):
         if not self.check_fit_in_volume(self.inputPoints, width, height):
             return
 
-        spacing = int(global_space_between_objects)
+        spacing = int(global_space_between_objects * self.svg_to_mm * 10)
         rotations = self.generate_rotations(global_rotations) if global_rotations > 0 else []
 
         nfp_config = self.configure_nesting_parameters(rotations)
@@ -1295,11 +1295,11 @@ class RightPart(QWidget):
                     
                     if collides:
                         # Draw highlighted colliding items
-                        ax.plot(x_points, y_points, color='red', linewidth=((self.volume.width() + self.volume.height()) / 20000))  # Example: red color for colliding items
+                        ax.plot(x_points, y_points, color='red', linewidth=1)  # Example: red color for colliding items
                         # Add text annotation with object number
                     else:
                         # Draw normally for non-colliding items
-                        ax.plot(x_points, y_points, color='black', linewidth=((self.volume.width() + self.volume.height()) / 20000))
+                        ax.plot(x_points, y_points, color='black', linewidth=1)
 
                     min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
                     min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)

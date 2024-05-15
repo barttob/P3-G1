@@ -1092,7 +1092,7 @@ class RightPart(QWidget):
         for point in points:
             rotated_x = point[0] * cos_rot - point[1] * sin_rot
             rotated_y = point[0] * sin_rot + point[1] * cos_rot
-            transformed_points.append((rotated_x + trans_x, rotated_y + trans_y))
+            transformed_points.append((rotated_x + trans_x + self.volume.width() / 2, rotated_y + trans_y + self.volume.height() / 2))
         return transformed_points
 
 
@@ -1190,8 +1190,8 @@ class RightPart(QWidget):
             fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
             ax = fig.add_subplot(111)
             ax.set_aspect('equal')
-            ax.set_xlim([-self.volume.width() / 2, self.volume.width() / 2])
-            ax.set_ylim([-self.volume.height() / 2, self.volume.height() / 2])
+            ax.set_xlim([0, self.volume.width()])
+            ax.set_ylim([0, self.volume.height()])
             ax.set_xticks([])
             ax.set_yticks([])
 
@@ -1209,7 +1209,7 @@ class RightPart(QWidget):
             ax.tick_params(axis='both', labelsize=10)
 
             # Set tick positions and labels for Y-axis
-            ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
+            # ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
             ax.tick_params(axis='y', labelsize=10)  # Set Y-axis tick label size
             ax.yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))

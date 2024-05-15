@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLa
                              QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, 
                              QGraphicsPolygonItem, QDialogButtonBox)
 from PyQt5.QtCore import pyqtSignal, Qt, QPointF, QRectF, QTimer
-from PyQt5.QtGui import QPolygonF, QPainterPath, QPen, QColor, QBrush
+from PyQt5.QtGui import QPolygonF, QPainterPath, QPen, QColor, QBrush, QFont, QFontDatabase
+
 from TAB.main_tab.right_part import RightPart  # Import klasy RightPart
 import random
 import numpy as np
@@ -23,7 +24,7 @@ class RectanglePacker:
             "TOP_RIGHT": self.pack_top_right,
             "CENTER": self.pack_center,
             "DONT_ALIGN": self.pack_random
-        }.get(optimization, self.pack_random)
+        }.get(optimization, self.pack_center)
 
         return method(rectangles, space)
 
@@ -36,12 +37,15 @@ class RectanglePacker:
                 x = space
                 y += max_row_height + space
                 max_row_height = 0
+                if y + h + space > self.height:  
+                    break
             if y + h + space > self.height:
                 break
             positions.append((x, y, w, h))
             x += w + space
             max_row_height = max(max_row_height, h)
         return positions
+
 
     def pack_bottom_right(self, rectangles, space):
         positions = []
@@ -61,18 +65,16 @@ class RectanglePacker:
 
     def pack_top_left(self, rectangles, space):
         positions = []
-        x = space
+        x, y = space, self.height - space
         max_row_height = 0
-        # Initialize y after knowing what h is
         for w, h in rectangles:
-            y = self.height - space - h
             if x + w + space > self.width:
                 x = space
                 y -= max_row_height + space
                 max_row_height = 0
-            if y < 0:
+            if y - h - space < 0:
                 break
-            positions.append((x, y, w, h))
+            positions.append((x, y - h, w, h))
             x += w + space
             max_row_height = max(max_row_height, h)
         return positions
@@ -94,23 +96,44 @@ class RectanglePacker:
         return positions
 
     def pack_center(self, rectangles, space):
+        if not rectangles:
+            return []
+
+        # Przygotowanie zmiennych do środkowania
         positions = []
-        x, y = (self.width // 2), (self.height // 2)
+        x, y = 0, (self.height // 2)
+        total_rectangles_width = sum(w for w, h in rectangles) + (len(rectangles) - 1) * space
+        initial_x = (self.width - total_rectangles_width) // 2
+
+        x = initial_x
         row_width = 0
         max_row_height = 0
+
         for w, h in rectangles:
+            # Sprawdzenie, czy potrzebny jest nowy rząd
+            if x + w - initial_x > self.width:
+                x = initial_x  # Resetowanie x do początku nowego rzędu
+                y += max_row_height + space  # Przejście do nowego rzędu
+                max_row_height = 0
+                if y + h > self.height:  # Sprawdzenie, czy nowy rząd mieści się w obszarze
+                    break
+
+            # Dodanie prostokąta do listy pozycji
+            positions.append((x, y, w, h))
+            x += w + space  # Przesunięcie x o szerokość prostokąta i odstęp
+            row_width += w + space
+            max_row_height = max(max_row_height, h)  # Aktualizacja najwyższego prostokąta w rzędzie
+
+            # Resetowanie x i aktualizacja y jeśli konieczne
             if row_width + w + space > self.width:
-                x = (self.width // 2)
+                x = initial_x
                 y += max_row_height + space
                 max_row_height = 0
                 row_width = 0
-            if y + h + space > self.height:
-                break
-            positions.append((x, y, w, h))
-            x += w + space
-            row_width += w + space
-            max_row_height = max(max_row_height, h)
+
         return positions
+
+
 
     def pack_random(self, rectangles, space):
         positions = []
@@ -133,7 +156,10 @@ class ConfigTab(QWidget):
         self.setup_right_side()
 
         # Ensure the initial update happens after layout is adjusted
-        QTimer.singleShot(0, self.update_visualization)
+        QTimer.singleShot(0, self.start_scene)
+        QTimer.singleShot(20, self.update_visualization)
+        QTimer.singleShot(30, self.clear_scene)
+        QTimer.singleShot(2000, self.set_default_values)
   
 
     def setup_left_side(self):
@@ -194,7 +220,13 @@ class ConfigTab(QWidget):
         form_layout.addRow(self.label_spacebetweenobjects, self.space_between_objects_lineedit)
 
         form_layout.addRow(QLabel(""))
-        form_layout.addRow(QLabel(""))
+       # Tworzenie etykiety do wyświetlenia po ustawieniu domyślnych ustawień
+        self.default_settings_label = QLabel("")
+        self.default_settings_label.setAlignment(Qt.AlignCenter)
+        self.default_settings_label.setStyleSheet(
+            "color: green; font-size: 18px; margin-bottom: 0px;"
+        )  # Increased font size here
+        form_layout.addRow(self.default_settings_label)
 
         # Konfiguracja nestingu
         label_nestConfiguration = QLabel("<b>Konfiguracja nestigu:<b>")
@@ -378,11 +410,30 @@ class ConfigTab(QWidget):
         self.auto_save_parameters()
         self.submit_value()
 
+
+
     def setup_right_side(self):
         self.right_half = QWidget(self)
         self.right_half.setStyleSheet("background-color: white;")
         right_layout = QVBoxLayout(self.right_half)
         self.main_layout.addWidget(self.right_half, stretch=7)
+
+        # Etykieta "Wizualizacja" do dodania nad sceną
+        visualization_label = QLabel("Wizualizacja")
+        visualization_label.setFont(QFont("Verdana", 19, QFont.Bold))
+        visualization_label.setAlignment(Qt.AlignCenter)
+        visualization_label.setStyleSheet("""
+            color: #333333;  /* ciemnoszary kolor tekstu */
+            margin-top: 5px;
+            margin-bottom: 10px;
+        """)
+
+        # Layout dla wyśrodkowania napisu "Wizualizacja"
+        label_layout = QHBoxLayout()
+        label_layout.addWidget(visualization_label)
+
+        # Dodaj layout z etykietą do głównego layoutu prawej strony
+        right_layout.addLayout(label_layout)
 
         self.scene = QGraphicsScene()
         self.view = QGraphicsView(self.scene)
@@ -410,7 +461,7 @@ class ConfigTab(QWidget):
 
     def update_visualization(self):
         if not hasattr(self, 'scene'):
-            return  # Prevent access before scene is set up
+            return  
 
         self.scene.clear()
         try:
@@ -419,16 +470,38 @@ class ConfigTab(QWidget):
             space = 0
 
         optimization = self.optimization_combobox.currentText()
-        rectangles = [(random.randint(20, 60), random.randint(20, 60)) for _ in range(10)]
+        rectangles = [(random.randint(30, 100), random.randint(30, 100)) for _ in range(12)]
         packer = RectanglePacker(self.view.width() - 4, self.view.height() - 4)
         positions = packer.pack_rectangles(rectangles, space, optimization)
 
         for x, y, w, h in positions:
-            rect = QGraphicsRectItem(x, y, w, h)
+            rect = QGraphicsRectItem(x, y, w, h )
             rect.setBrush(QBrush(QColor(random.randint(100, 255), random.randint(100, 255), random.randint(100, 255), 150)))
             rect.setPen(QPen(QColor(0, 0, 0), 1))
             self.scene.addItem(rect)
+    def clear_scene(self):
+        self.scene.clear()
 
+    def start_scene(self):
+        if not hasattr(self, 'scene'):
+            return  
+
+        self.scene.clear()
+        try:
+            space = max(float(self.space_between_objects_lineedit.text()), 0)
+        except ValueError:
+            space = 0
+
+        optimization = "BOTTOM_LEFT"
+        rectangles = [(random.randint(30, 100), random.randint(30, 100)) for _ in range(12)]
+        packer = RectanglePacker(self.view.width() - 4, self.view.height() - 4)
+        positions = packer.pack_rectangles(rectangles, space, optimization)
+
+        for x, y, w, h in positions:
+            rect = QGraphicsRectItem(x, y, w, h )
+            rect.setBrush(QBrush(QColor(random.randint(100, 255), random.randint(100, 255), random.randint(100, 255), 150)))
+            rect.setPen(QPen(QColor(0, 0, 0), 1))
+            self.scene.addItem(rect)
 
     def trigger_visual_update(self):
         self.update_visualization()
@@ -437,7 +510,10 @@ class ConfigTab(QWidget):
 
       
     def set_default_values(self):
-        
+        self.default_settings_label.setText("Ustawiono domyślne ustawienia")
+        self.default_settings_label.show()
+        QTimer.singleShot(3000, lambda: self.default_settings_label.setText(""))  
+
         self.explore_holes_checkbox.setChecked(False)
         self.parallel_checkbox.setChecked(True)
         self.optimization_combobox.setCurrentIndex(0)

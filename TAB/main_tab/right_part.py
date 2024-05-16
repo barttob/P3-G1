@@ -34,6 +34,7 @@ import re
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from matplotlib.ticker import MultipleLocator, FuncFormatter
+from collections import namedtuple
 
 
 
@@ -481,6 +482,7 @@ class ZoomableGraphicsView(QGraphicsView):
             QPainter.TextAntialiasing
         )
         self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
 
     def wheelEvent(self, event):
         zoomInFactor = 1.25
@@ -504,6 +506,19 @@ class ZoomableGraphicsView(QGraphicsView):
     def resetZoom(self):
         self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
 
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.NoDrag)
+        super().mouseReleaseEvent(event)
+
 class RightPart(QWidget):
     rotation_displayed = pyqtSignal(float)
     
@@ -512,6 +527,7 @@ class RightPart(QWidget):
         layout = QVBoxLayout()  # Layout to arrange widgets vertically
 
         self.change_tab_func = change_tab_func
+        self.FigureList = namedtuple('FigureList', ['x_coords', 'y_coords', 'collides'])
         # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
@@ -1132,6 +1148,13 @@ class RightPart(QWidget):
         for i, canvas in enumerate(self.canvas_layers):
             canvas.setVisible(i == index)  # Ustaw widoczność odpowiedniej warstwy
 
+        pen = QPen(Qt.black)
+        pen.setStyle(Qt.SolidLine)
+        pen.setWidth(2)
+        pen.setCosmetic(True)
+
+        self.scene.clear()
+
         # Sprawdź, czy index jest w zakresie i zapisz obiekt Figure do pliku SVG
         if 0 <= index < len(self.figures):
             fig = self.figures[index]
@@ -1139,13 +1162,30 @@ class RightPart(QWidget):
             fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
             fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
             fig.set_size_inches(8, 8)
-            print(f"SVG version '{index + 1}' saved as '{svg_filename}'.")  
+            print(f"SVG version '{index + 1}' saved as '{svg_filename}'.") 
+            self.scene.addLine(0, 0, self.volume.width(), 0, pen)
+            self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
+            self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
+            self.scene.addLine(0, self.volume.height(), 0, 0, pen) 
+            for figure in self.figuresListCorrect[index]:
+                if figure.collides:
+                    pen.setColor(Qt.red)
+                    for i in range(len(figure.x_coords) - 1):
+                        self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+                else:
+                    pen.setColor(Qt.black)
+                    for i in range(len(figure.x_coords) - 1):
+                        self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
 
     async def display_file(self, file_paths, width, height, checked_paths):
         self.figures.clear()
+        self.scene.clear()
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
             QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
             return
+
+        self.figuresList = []
+        self.figuresListCorrect = []
 
         self.progress_bar.setMaximum(global_rotations - 1)
         await asyncio.sleep(0)
@@ -1182,8 +1222,18 @@ class RightPart(QWidget):
                 self.stop_requested = False
                 break
 
+            self.figuresList = []
+
             nfp_config.rotations = [rotation]
             num_bins = nest(self.inputPoints, self.volume, spacing, nfp_config)
+            
+            pen = QPen(Qt.black)
+            pen.setStyle(Qt.SolidLine)
+            pen.setWidth(2)
+            pen.setCosmetic(True)
+
+            self.current_pos = (0, 0)
+
             self.progress_bar.setValue(index)
 
             # Prepare plot for visualization
@@ -1240,7 +1290,7 @@ class RightPart(QWidget):
                         collision_pair = (i, j) if i < j else (j, i)  # Ensure consistent pair order
                         if collision_pair not in seen_collisions:
                             seen_collisions.add(collision_pair)
-                            print(f"Collision detected between item {i} and item {j}")
+                            # print(f"Collision detected between item {i} and item {j}")
                             # collision_count += 1
                             last_collision_count = len(seen_collisions)
                         else:
@@ -1292,20 +1342,26 @@ class RightPart(QWidget):
                 
                     # Determine if the current item is involved in a collision
                     collides = any((i in pair) for pair in seen_collisions)
-                    
+
+                    self.scene.addLine(0, 0, self.volume.width(), 0, pen)
+                    self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
+                    self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
+                    self.scene.addLine(0, self.volume.height(), 0, 0, pen)
+
+                    self.figuresList.append(self.FigureList(x_coords=x_points, y_coords=y_points, collides=collides))
+
                     if collides:
-                        # Draw highlighted colliding items
-                        ax.plot(x_points, y_points, color='red', linewidth=1)  # Example: red color for colliding items
-                        # Add text annotation with object number
+                        ax.plot(x_points, y_points, color='red', linewidth=1)
                     else:
-                        # Draw normally for non-colliding items
                         ax.plot(x_points, y_points, color='black', linewidth=1)
+
 
                     min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
                     min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
                     
                 if collides:
                     ax.text(np.mean(x_points), np.mean(y_points), str(i + 1), color='red', fontsize=12, ha='center', va='center')
+
 
             # Calculate the area of the bounding box
             bounding_box_width = max_x - min_x
@@ -1324,23 +1380,43 @@ class RightPart(QWidget):
                 # Draw the bounding box
                 ax.add_patch(Rectangle((min_x, min_y), bounding_box_width, bounding_box_height, linewidth=1, edgecolor='r', facecolor='none'))
 
-                # Display the canvas only if it's the smallest bounding box found so far
-                canvas = FigureCanvas(fig)
-                #canvas.setVisible(False)  # Domyślnie niewidoczne
-                self.scene.addWidget(canvas)
-                canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                self.canvas_layers.append(canvas)
-                #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
-                self.figures.append(fig)
-                # Update the scene and UI
-                self.scene.update()
-                QApplication.processEvents()
+                # # Display the canvas only if it's the smallest bounding box found so far
+                # canvas = FigureCanvas(fig)
+                # #canvas.setVisible(False)  # Domyślnie niewidoczne
+                # self.scene.addWidget(canvas)
+                # canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                # self.canvas_layers.append(canvas)
+                # #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
+                self.figures.append(fig) 
+                self.figuresListCorrect.append(self.figuresList)
+
+                self.scene.clear()
+                for figure in self.figuresListCorrect[-1]:
+                    if figure.collides:
+                        pen.setColor(Qt.red)
+                        for i in range(len(figure.x_coords) - 1):
+                            self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+                    else:
+                        pen.setColor(Qt.black)
+                        for i in range(len(figure.x_coords) - 1):
+                            self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+
+                # # Update the scene and UI
+                # self.scene.update()
+                # QApplication.processEvents()
 
                 # Zapisz SVG
                 svg_filename = "output.svg"
                 fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
                 fig.set_size_inches(8, 8)
+            else:
+                self.figuresList.pop()
+
+            self.graphics_view.setRenderHint(QPainter.NonCosmeticDefaultPen)  # This line ensures that the line width remains constant when the view is scaled
+            self.graphics_view.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+            self.graphics_view.setTransformationAnchor(QGraphicsView.NoAnchor)  # This line disables the transformation anchor
+            self.graphics_view.fitInView(self.scene.itemsBoundingRect(), Qt.KeepAspectRatio)
             self.graphics_view.resetZoom()
 
         self.update_combobox_with_best_configurations()

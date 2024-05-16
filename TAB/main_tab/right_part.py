@@ -1,5 +1,5 @@
 
-from PyQt5.QtGui import QImage, QPixmap, QPainter
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QFont
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
 import random
@@ -1163,10 +1163,7 @@ class RightPart(QWidget):
             fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
             fig.set_size_inches(8, 8)
             print(f"SVG version '{index + 1}' saved as '{svg_filename}'.") 
-            self.scene.addLine(0, 0, self.volume.width(), 0, pen)
-            self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
-            self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
-            self.scene.addLine(0, self.volume.height(), 0, 0, pen) 
+            self.draw_nesting_box()
             for figure in self.figuresListCorrect[index]:
                 if figure.collides:
                     pen.setColor(Qt.red)
@@ -1177,9 +1174,43 @@ class RightPart(QWidget):
                     for i in range(len(figure.x_coords) - 1):
                         self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
 
+    def draw_nesting_box(self):
+        font = QFont()
+        min_val = int(min(self.volume.width(), self.volume.height()) / 100)
+        font.setPointSize(min_val)
+
+        pen = QPen(Qt.black)
+        pen.setStyle(Qt.SolidLine)
+        pen.setWidth(2)
+        pen.setCosmetic(True)
+
+        self.scene.addLine(0, 0, self.volume.width(), 0, pen)
+        self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
+        self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
+        self.scene.addLine(0, self.volume.height(), 0, 0, pen)
+
+        # Calculate 10% of the width and height
+        scale_width = self.volume.width() * 0.1
+        scale_height = self.volume.height() * 0.1
+
+        for i in range(10, -1, -1):
+            self.scene.addLine(0, (10 - i) * scale_height, -min_val, (10 - i) * scale_height, pen)
+            label_value = i * 0.1 * self.volume.height() / 100
+            label = QGraphicsTextItem(f"{label_value:.0f}mm")
+            label.setFont(font)
+            label.setPos(-label.boundingRect().width() - (1.5 * min_val), (10 - i) * scale_height - (0.75 * min_val))
+            self.scene.addItem(label)
+
+        for i in range(11):
+            self.scene.addLine(i * scale_width, self.volume.height(), i * scale_width, self.volume.height() + min_val, pen)
+            label_value = i * 0.1 * self.volume.width() / 100 
+            label = QGraphicsTextItem(f"{label_value:.0f}mm")
+            label.setFont(font)
+            label.setPos(i * scale_width - label.boundingRect().width() / 2, self.volume.height() + (1.5 * min_val))
+            self.scene.addItem(label)
+
     async def display_file(self, file_paths, width, height, checked_paths):
         self.figures.clear()
-        self.scene.clear()
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
             QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
             return
@@ -1249,24 +1280,24 @@ class RightPart(QWidget):
             # ax.plot([0, width], 'k-')  # Draw bottom edge line with ticks
 
             # Set major tick spacing and format tick labels with mm units
-            major_tick_spacing = 100  # Set major tick spacing to 100 mm
-            # Set tick positions and labels for better visibility
-            ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
-            ax.xaxis.set_major_formatter(FuncFormatter(self.format_x_ticks))
+            # major_tick_spacing = 100  # Set major tick spacing to 100 mm
+            # # Set tick positions and labels for better visibility
+            # ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
+            # ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
+            # ax.xaxis.set_major_formatter(FuncFormatter(self.format_x_ticks))
 
-            # Set tick parameters and labels for better visibility
-            ax.tick_params(axis='both', labelsize=10)
+            # # Set tick parameters and labels for better visibility
+            # ax.tick_params(axis='both', labelsize=10)
 
-            # Set tick positions and labels for Y-axis
-            # ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
-            ax.tick_params(axis='y', labelsize=10)  # Set Y-axis tick label size
-            ax.yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
-            ax.yaxis.set_major_formatter(FuncFormatter(self.format_y_ticks))
-            # Adjust tick length specifically for major ticks on Y-axis
-            ax.tick_params(axis='y', which='major', length=8)
-            ax.tick_params(axis='x', which='major', length=8)
+            # # Set tick positions and labels for Y-axis
+            # # ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
+            # ax.tick_params(axis='y', labelsize=10)  # Set Y-axis tick label size
+            # ax.yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
+            # ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
+            # ax.yaxis.set_major_formatter(FuncFormatter(self.format_y_ticks))
+            # # Adjust tick length specifically for major ticks on Y-axis
+            # ax.tick_params(axis='y', which='major', length=8)
+            # ax.tick_params(axis='x', which='major', length=8)
             # Draw line with grid (tick marks) for left (Y-axis) edge
             # ax.plot([0, height], 'k-')  # Draw left edge line
 
@@ -1342,11 +1373,7 @@ class RightPart(QWidget):
                 
                     # Determine if the current item is involved in a collision
                     collides = any((i in pair) for pair in seen_collisions)
-
-                    self.scene.addLine(0, 0, self.volume.width(), 0, pen)
-                    self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
-                    self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
-                    self.scene.addLine(0, self.volume.height(), 0, 0, pen)
+                    
 
                     self.figuresList.append(self.FigureList(x_coords=x_points, y_coords=y_points, collides=collides))
 
@@ -1391,6 +1418,7 @@ class RightPart(QWidget):
                 self.figuresListCorrect.append(self.figuresList)
 
                 self.scene.clear()
+                self.draw_nesting_box()
                 for figure in self.figuresListCorrect[-1]:
                     if figure.collides:
                         pen.setColor(Qt.red)

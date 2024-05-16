@@ -500,11 +500,17 @@ class ZoomableGraphicsView(QGraphicsView):
         # Nowa skala po zastosowaniu zoomu
         newScale = oldScale * scaleFactor
 
-        if 0.05 < newScale < 10:  # Ogranicz zakres skalowania np. od 0.05x do 10x
+        if 0.000001 < newScale < 1000:  # Ogranicz zakres skalowania np. od 0.05x do 10x
             self.scale(scaleFactor, scaleFactor)
     
     def resetZoom(self):
         self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
+
+    def zoomIn(self):
+        self.scale(1.2, 1.2)
+
+    def zoomOut(self):
+        self.scale(1 / 1.2, 1 / 1.2)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -548,10 +554,20 @@ class RightPart(QWidget):
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
         layout.addWidget(self.graphics_view)
-        
-        # Horizontal layout for buttons
-        button_layout = QHBoxLayout()  # Layout to arrange buttons horizontally
 
+        zoom_button_layout = QHBoxLayout()
+        self.zoom_in_button = QPushButton("Zoom In")
+        self.zoom_in_button.clicked.connect(self.graphics_view.zoomIn)
+        zoom_button_layout.addWidget(self.zoom_in_button)
+        self.zoom_out_button = QPushButton("Zoom Out")
+        self.zoom_out_button.clicked.connect(self.graphics_view.zoomOut)
+        zoom_button_layout.addWidget(self.zoom_out_button)
+        self.reset_zoom_button = QPushButton("Reset Zoom")
+        self.reset_zoom_button.clicked.connect(self.graphics_view.resetZoom)
+        zoom_button_layout.addWidget(self.reset_zoom_button)
+        layout.addLayout(zoom_button_layout)
+
+        button_layout = QHBoxLayout()
         # 'Stop Nesting' Button
         self.stop_nesting_button = QPushButton("Stop Nesting")
         self.stop_nesting_button.clicked.connect(self.request_stop)
@@ -1161,7 +1177,7 @@ class RightPart(QWidget):
             svg_filename = "output.svg"  # Stała nazwa pliku
             fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
             fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-            fig.set_size_inches(8, 8)
+            # fig.set_size_inches(8, 8)
             print(f"SVG version '{index + 1}' saved as '{svg_filename}'.") 
             self.draw_nesting_box()
             for figure in self.figuresListCorrect[index]:
@@ -1211,6 +1227,9 @@ class RightPart(QWidget):
 
     async def display_file(self, file_paths, width, height, checked_paths):
         self.figures.clear()
+        self.scene = QGraphicsScene()
+        self.graphics_view.setScene(self.scene)
+        # self.scene.clear()
         if any(var is None for var in [global_space_between_objects, global_optimization, global_accuracy, global_rotations, global_starting_point]):
             QMessageBox.critical(None, "Error", "Not all nesting parameters are configured.\nPlease configure all nesting parameters before calling the nesting function.")
             return
@@ -1268,7 +1287,8 @@ class RightPart(QWidget):
             self.progress_bar.setValue(index)
 
             # Prepare plot for visualization
-            fig = Figure(figsize=(8, 8), tight_layout={'pad': 0})
+            # fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
+            fig = Figure(figsize=(self.volume.width() / 72, self.volume.height() / 72), tight_layout={'pad': 0})
             ax = fig.add_subplot(111)
             ax.set_aspect('equal')
             ax.set_xlim([0, self.volume.width()])
@@ -1435,9 +1455,9 @@ class RightPart(QWidget):
 
                 # Zapisz SVG
                 svg_filename = "output.svg"
-                fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
+                # fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
                 fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
-                fig.set_size_inches(8, 8)
+                # fig.set_size_inches(8, 8)
             else:
                 self.figuresList.pop()
 

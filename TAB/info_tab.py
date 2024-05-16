@@ -3,6 +3,53 @@ from PyQt5.QtGui import QPainter, QPen, QColor, QTextCursor, QBrush
 from PyQt5.QtCore import Qt, QRectF, QTimer
 
 
+class ZoomableGraphicsView(QGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setRenderHints(
+            QPainter.Antialiasing |
+            QPainter.SmoothPixmapTransform |
+            QPainter.TextAntialiasing
+        )
+        self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
+
+    def wheelEvent(self, event):
+        zoomInFactor = 1.25
+        zoomOutFactor = 1 / zoomInFactor
+
+        # Uzyskanie aktualnych skal
+        oldScale = self.transform().m11()
+
+        # Ograniczenie poziomu zoomu
+        if event.angleDelta().y() > 0:
+            scaleFactor = zoomInFactor
+        else:
+            scaleFactor = zoomOutFactor
+
+        # Nowa skala po zastosowaniu zoomu
+        newScale = oldScale * scaleFactor
+
+        if 0.05 < newScale < 100:  # Ogranicz zakres skalowania np. od 0.05x do 10x
+            self.scale(scaleFactor, scaleFactor)
+    
+    def resetZoom(self):
+        self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.NoDrag)
+        super().mouseReleaseEvent(event)
+
 class InfoTab(QWidget):
     def __init__(self):
         super().__init__()
@@ -11,7 +58,9 @@ class InfoTab(QWidget):
         self.setLayout(layout)
 
         # Create a QGraphicsView for visualization
-        self.graphics_view = QGraphicsView()
+        self.graphics_view = ZoomableGraphicsView()
+        self.scene = QGraphicsScene()
+        self.graphics_view.setScene(self.scene)
         layout.addWidget(self.graphics_view)
 
         # Add a slider to control the visualization progress
@@ -36,8 +85,13 @@ class InfoTab(QWidget):
         layout.addLayout(button_layout)
 
         # Create a QGraphicsScene
-        self.scene = QGraphicsScene()
-        self.graphics_view.setScene(self.scene)
+        # self.scene = QGraphicsScene()
+        # self.graphics_view.setScene(self.scene)
+
+        # self.graphics_view = ZoomableGraphicsView()
+        # self.scene = QGraphicsScene()
+        # self.graphics_view.setScene(self.scene)
+        # layout.addWidget(self.graphics_view)
 
         self.slider.valueChanged.connect(self.update_visualization)
 
@@ -70,9 +124,13 @@ class InfoTab(QWidget):
         
 
     def start_auto_move(self):
-        self.slider.setValue(0)
-        # Start the timer to automatically move the slider
-        self.timer.start(100)  # Adjust the interval (milliseconds) as needed for the desired speed
+        if self.timer.isActive():
+            self.timer.stop()
+            self.auto_move_button.setText("Start Auto Move")
+        else:
+            self.slider.setValue(0)
+            self.timer.start(100)  # Adjust the interval (milliseconds) as needed for the desired speed
+            self.auto_move_button.setText("Stop Auto Move")
 
     def increment_slider_value(self):
         # Increment the slider's value and stop the timer when it reaches the maximum value

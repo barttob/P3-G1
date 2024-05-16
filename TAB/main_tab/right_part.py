@@ -1,5 +1,5 @@
 
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QFont
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QFont, QColor
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
 import random
@@ -533,7 +533,7 @@ class RightPart(QWidget):
         layout = QVBoxLayout()  # Layout to arrange widgets vertically
 
         self.change_tab_func = change_tab_func
-        self.FigureList = namedtuple('FigureList', ['x_coords', 'y_coords', 'collides'])
+        self.FigureList = namedtuple('FigureList', ['x_coords', 'y_coords', 'collides', 'index'])
         # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
@@ -1169,6 +1169,10 @@ class RightPart(QWidget):
         pen.setWidth(2)
         pen.setCosmetic(True)
 
+        font = QFont()
+        min_val = int(min(self.volume.width(), self.volume.height()) / 100)
+        font.setPointSize(min_val)
+
         self.scene.clear()
 
         # Sprawdź, czy index jest w zakresie i zapisz obiekt Figure do pliku SVG
@@ -1180,11 +1184,22 @@ class RightPart(QWidget):
             # fig.set_size_inches(8, 8)
             print(f"SVG version '{index + 1}' saved as '{svg_filename}'.") 
             self.draw_nesting_box()
-            for figure in self.figuresListCorrect[index]:
+            pen.setColor(QColor('red').lighter(175))
+            self.scene.addRect(self.figuresListCorrect[index][1], self.figuresListCorrect[index][2], self.figuresListCorrect[index][3], self.figuresListCorrect[index][4], pen)
+            pen.setColor(Qt.black)
+            label_flag = []
+            for figure in self.figuresListCorrect[index][0]:
                 if figure.collides:
-                    pen.setColor(Qt.red)
+                    pen.setColor(QColor('red').lighter(150))
                     for i in range(len(figure.x_coords) - 1):
                         self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+                    if figure.index not in label_flag:
+                        label = QGraphicsTextItem(f"{figure.index + 1}")
+                        label.setFont(font)
+                        label.setPos(figure.x_coords[0], figure.y_coords[0])
+                        label.setDefaultTextColor(QColor('red').lighter(75))
+                        self.scene.addItem(label)
+                        label_flag.append(figure.index)
                 else:
                     pen.setColor(Qt.black)
                     for i in range(len(figure.x_coords) - 1):
@@ -1200,10 +1215,7 @@ class RightPart(QWidget):
         pen.setWidth(2)
         pen.setCosmetic(True)
 
-        self.scene.addLine(0, 0, self.volume.width(), 0, pen)
-        self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
-        self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
-        self.scene.addLine(0, self.volume.height(), 0, 0, pen)
+        self.scene.addRect(0, 0, self.volume.width(), self.volume.height(), pen)
 
         # Calculate 10% of the width and height
         scale_width = self.volume.width() * 0.1
@@ -1395,7 +1407,7 @@ class RightPart(QWidget):
                     collides = any((i in pair) for pair in seen_collisions)
                     
 
-                    self.figuresList.append(self.FigureList(x_coords=x_points, y_coords=y_points, collides=collides))
+                    self.figuresList.append(self.FigureList(x_coords=x_points, y_coords=y_points, collides=collides, index=i))
 
                     if collides:
                         ax.plot(x_points, y_points, color='red', linewidth=1)
@@ -1408,7 +1420,6 @@ class RightPart(QWidget):
                     
                 if collides:
                     ax.text(np.mean(x_points), np.mean(y_points), str(i + 1), color='red', fontsize=12, ha='center', va='center')
-
 
             # Calculate the area of the bounding box
             bounding_box_width = max_x - min_x
@@ -1427,6 +1438,10 @@ class RightPart(QWidget):
                 # Draw the bounding box
                 ax.add_patch(Rectangle((min_x, min_y), bounding_box_width, bounding_box_height, linewidth=1, edgecolor='r', facecolor='none'))
 
+                # self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
+                # self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
+                # self.scene.addLine(0, self.volume.height(), 0, 0, pen)
+
                 # # Display the canvas only if it's the smallest bounding box found so far
                 # canvas = FigureCanvas(fig)
                 # #canvas.setVisible(False)  # Domyślnie niewidoczne
@@ -1435,15 +1450,29 @@ class RightPart(QWidget):
                 # self.canvas_layers.append(canvas)
                 # #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
                 self.figures.append(fig) 
-                self.figuresListCorrect.append(self.figuresList)
+                self.figuresListCorrect.append((self.figuresList, min_x, min_y, bounding_box_width, bounding_box_height))
 
                 self.scene.clear()
+                pen.setColor(QColor('red').lighter(175))
+                self.scene.addRect(min_x, min_y, bounding_box_width, bounding_box_height, pen)
+                pen.setColor(Qt.black)
                 self.draw_nesting_box()
-                for figure in self.figuresListCorrect[-1]:
+                font = QFont()
+                min_val = int(min(self.volume.width(), self.volume.height()) / 100)
+                font.setPointSize(min_val)
+                label_flag = []
+                for figure in self.figuresListCorrect[-1][0]:
                     if figure.collides:
-                        pen.setColor(Qt.red)
+                        pen.setColor(QColor('red').lighter(150))
                         for i in range(len(figure.x_coords) - 1):
                             self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+                        if figure.index not in label_flag:
+                            label = QGraphicsTextItem(f"{figure.index + 1}")
+                            label.setFont(font)
+                            label.setPos(figure.x_coords[0], figure.y_coords[0])
+                            label.setDefaultTextColor(QColor('red').lighter(75))
+                            self.scene.addItem(label)
+                            label_flag.append(figure.index)
                     else:
                         pen.setColor(Qt.black)
                         for i in range(len(figure.x_coords) - 1):

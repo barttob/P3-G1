@@ -1188,6 +1188,7 @@ class RightPart(QWidget):
             self.scene.addRect(self.figuresListCorrect[index][1], self.figuresListCorrect[index][2], self.figuresListCorrect[index][3], self.figuresListCorrect[index][4], pen)
             pen.setColor(Qt.black)
             label_flag = []
+            collision_count = 0
             for figure in self.figuresListCorrect[index][0]:
                 if figure.collides:
                     pen.setColor(QColor('red').lighter(150))
@@ -1200,10 +1201,20 @@ class RightPart(QWidget):
                         label.setDefaultTextColor(QColor('red').lighter(75))
                         self.scene.addItem(label)
                         label_flag.append(figure.index)
+                        collision_count += 1
                 else:
                     pen.setColor(Qt.black)
                     for i in range(len(figure.x_coords) - 1):
                         self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+
+            if collision_count > 0:
+                self.summary_label.setStyleSheet("color: red")
+                col_summary_text = f"Number of collisions detected: {collision_count}.\nConsider removing some of the nested objects"
+            else:
+                col_summary_text = "No collisions detected\n"
+                self.summary_label.setStyleSheet("color: green")
+            self.summary_label.setText(col_summary_text)
+
 
     def draw_nesting_box(self):
         font = QFont()
@@ -1344,6 +1355,7 @@ class RightPart(QWidget):
             seen_collisions = set()
 
             # Iterate through input points
+            last_collision_count = 0
             for i, item1 in enumerate(self.inputPoints):
                 await asyncio.sleep(0)
                 transItem1 = item1.transformedShape()
@@ -1358,21 +1370,7 @@ class RightPart(QWidget):
                             last_collision_count = len(seen_collisions)
                         else:
                             print(f"No collisions detected")
-            # Update collision report if new collisions were detected
-            if last_collision_count == 0:
-                # No new collisions detected, maintain previous report
-                col_summary_text = "No collisions detected\n"
-                self.summary_label.setStyleSheet("color: green")
-            else:
-                # Col detected
-                if last_collision_count > 0:
-                    col_summary_text = f"Number of collisions detected: {last_collision_count}.\nConsider removing some of the nested objects"
-                    summary_report += "Detailed Collision Report:\n"
-                    for pair in seen_collisions:
-                        summary_report += f"  - Object {pair[0] + 1} collided with Object {pair[1] + 1} in nesting version {index + 1}\n "
-                    self.summary_label.setStyleSheet("color: red")
-            # Update the summary_label with the generated summary text
-            self.summary_label.setText(col_summary_text)
+
 
             for i, item in enumerate(self.inputPoints):
                 await asyncio.sleep(0)
@@ -1451,6 +1449,22 @@ class RightPart(QWidget):
                 # #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
                 self.figures.append(fig) 
                 self.figuresListCorrect.append((self.figuresList, min_x, min_y, bounding_box_width, bounding_box_height))
+                
+                # Update collision report if new collisions were detected
+                if last_collision_count == 0:
+                    # No new collisions detected, maintain previous report
+                    col_summary_text = "No collisions detected\n"
+                    self.summary_label.setStyleSheet("color: green")
+                else:
+                    # Col detected
+                    if last_collision_count > 0:
+                        col_summary_text = f"Number of collisions detected: {last_collision_count}.\nConsider removing some of the nested objects"
+                        summary_report += "Detailed Collision Report:\n"
+                        for pair in seen_collisions:
+                            summary_report += f"  - Object {pair[0] + 1} collided with Object {pair[1] + 1} in nesting version {index + 1}\n "
+                        self.summary_label.setStyleSheet("color: red")
+                # Update the summary_label with the generated summary text
+                self.summary_label.setText(col_summary_text)
 
                 self.scene.clear()
                 pen.setColor(QColor('red').lighter(175))
@@ -1477,6 +1491,7 @@ class RightPart(QWidget):
                         pen.setColor(Qt.black)
                         for i in range(len(figure.x_coords) - 1):
                             self.scene.addLine(figure.x_coords[i], figure.y_coords[i], figure.x_coords[i+1], figure.y_coords[i+1], pen)
+                
 
                 # # Update the scene and UI
                 # self.scene.update()

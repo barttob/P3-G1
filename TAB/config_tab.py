@@ -878,7 +878,7 @@ class ConfigTab(QWidget):
 
  
 
-        QMessageBox.information(self, "Success", "Configuration updated successfully.")
+        # QMessageBox.information(self, "Success", "Configuration updated successfully.")
     
     def update_rotation_label(self, value):
         # Metoda wywoływana za każdym razem, gdy wartość suwaka się zmienia

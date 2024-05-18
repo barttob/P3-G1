@@ -1493,7 +1493,7 @@ class RightPart(QWidget):
                 else:
                     # Col detected
                     if last_collision_count > 0:
-                        col_summary_text = f"Number of collisions detected: {last_collision_count}.\nConsider removing some of the nested objects"
+                        col_summary_text = f"Number of collisions detected: {last_collision_count + 1}.\nConsider removing some of the nested objects"
                         summary_report += "Detailed Collision Report:\n"
                         for pair in seen_collisions:
                             summary_report += f"  - Object {pair[0] + 1} collided with Object {pair[1] + 1} in nesting version {index + 1}\n "

@@ -1419,24 +1419,28 @@ class RightPart(QWidget):
                 #     y_values.append(y_value)
                 # random_color = (random.random(), random.random(), random.random())
                 # ax.plot(x_values, y_values, color=random_color, linewidth=1)
-
-                parsed_path = parse_path(returned_svg_points[i])
-                item.resetTransformation()
-                x_points, y_points = [], []
-                for segment in parsed_path:
-                    await asyncio.sleep(0)
-                    x_points, y_points = [], []
-                    for t in np.linspace(0, 1, num=80):
-                        point = segment.point(t)
-                        transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
-                        x_points.append(transformed_point[0])
-                        y_points.append(transformed_point[1])
                 
-                    # Determine if the current item is involved in a collision
-                    collides = any((i in pair) for pair in seen_collisions)
+                paths = returned_svg_points[i].split('M')
+                # paths = [path for path in paths if path]
+                paths = ['M' + path for path in paths if path]
+                for path in paths: 
+                    parsed_path = parse_path(path)
+                    item.resetTransformation()
+                    x_points, y_points = [], []
+                    for segment in parsed_path:
+                        await asyncio.sleep(0)
+                        # x_points, y_points = [], []
+                        for t in np.linspace(0, 1, num=80):
+                            point = segment.point(t)
+                            transformed_point = self.apply_trans_and_rot([(point.real * 100 * self.svg_to_mm, point.imag * 100 * self.svg_to_mm)], item.translation().x(), item.translation().y(), item.rotation())[0]
+                            x_points.append(transformed_point[0])
+                            y_points.append(transformed_point[1])
                     
+                        # Determine if the current item is involved in a collision
+                        collides = any((i in pair) for pair in seen_collisions)
+                        
 
-                    self.figuresList.append(self.FigureList(x_coords=x_points, y_coords=y_points, collides=collides, index=i))
+                        self.figuresList.append(self.FigureList(x_coords=x_points, y_coords=y_points, collides=collides, index=i))
 
                     if collides:
                         ax.plot(x_points, y_points, color='red', linewidth=1)
@@ -1446,9 +1450,9 @@ class RightPart(QWidget):
 
                     min_x, max_x = min(min_x, *x_points), max(max_x, *x_points)
                     min_y, max_y = min(min_y, *y_points), max(max_y, *y_points)
-                    
-                if collides:
-                    ax.text(np.mean(x_points), np.mean(y_points), str(i + 1), color='red', fontsize=12, ha='center', va='center')
+                        
+                    if collides:
+                        ax.text(np.mean(x_points), np.mean(y_points), str(i + 1), color='red', fontsize=12, ha='center', va='center')
 
             # Calculate the area of the bounding box
             bounding_box_width = max_x - min_x
@@ -1531,7 +1535,7 @@ class RightPart(QWidget):
                 # Zapisz SVG
                 svg_filename = "output.svg"
                 # fig.set_size_inches(self.volume.width() / 72, self.volume.height() / 72)
-                fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
+                # fig.savefig(svg_filename, format='svg', bbox_inches='tight', pad_inches=0)
                 # fig.set_size_inches(8, 8)
             else:
                 self.figuresList.pop()

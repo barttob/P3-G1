@@ -111,7 +111,9 @@ class InfoTab(QWidget):
         self.stats_labels = {
             "Total Execution Time": QLabel("Całklowity czas pracy: 0 min"),
             "Total Cutting Time": QLabel("Czas cięcia: 0 min"),
-            "Average Speed": QLabel("Średnia prędkość: 0 mm/s")
+            "Average Speed": QLabel("Średnia prędkość: 0 mm/s"),
+            "Total Distance": QLabel("Całkowita długość ruchu: 0 mm"),
+            "Cutting Distance": QLabel("Całkowita długość cięcia: 0 mm")
         }
         
         for label in self.stats_labels.values():
@@ -188,6 +190,8 @@ class InfoTab(QWidget):
         self.total_cutting_time = 0
         self.total_movement_time = 0
         self.total_distance_traveled = 0
+        self.total_distance = 0
+        self.cutting_distance = 0
         self.speed_sum = 0
         self.num_lines = 0
 
@@ -235,8 +239,10 @@ class InfoTab(QWidget):
                     diff_y = new_y - self.current_pos[1]
                     if self.speed != 0:
                         self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                        self.total_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                            self.cutting_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                     self.current_pos = (new_x, new_y)
                 prev_x, prev_y = new_x, new_y
             elif 'Y' in params:
@@ -257,8 +263,10 @@ class InfoTab(QWidget):
                     diff_y = new_y - self.current_pos[1]
                     if self.speed != 0:
                         self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                        self.total_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                            self.cutting_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                     self.current_pos = (new_x, new_y)
                 prev_x, prev_y = new_x, new_y
             # if i == lines_to_visualize - 1:
@@ -309,8 +317,10 @@ class InfoTab(QWidget):
                     diff_y = new_y - self.current_pos[1]
                     if self.speed != 0:
                         self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                        self.total_distance += (((diff_x)**2 + (diff_y)**2)**0.5) 
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                            self.cutting_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                     self.current_pos = (new_x, new_y)
                 prev_x, prev_y = new_x, new_y
             elif 'Y' in params:
@@ -331,8 +341,10 @@ class InfoTab(QWidget):
                     diff_y = new_y - self.current_pos[1]
                     if self.speed != 0:
                         self.total_cutting_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                        self.total_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                         if solid_line:
                             self.cut_time += (((diff_x)**2 + (diff_y)**2)**0.5) / self.speed
+                            self.cutting_distance += (((diff_x)**2 + (diff_y)**2)**0.5)
                     self.current_pos = (new_x, new_y)
                 prev_x, prev_y = new_x, new_y
 
@@ -352,6 +364,8 @@ class InfoTab(QWidget):
         self.stats_labels["Total Cutting Time"].setText("Czas cięcia: {} min {} sec".format(cutting_minutes, cutting_seconds))
         
         self.stats_labels["Average Speed"].setText("Średnia prędkość: {:.2f} mm/s".format(self.speed_sum / self.num_lines))
+        self.stats_labels["Total Distance"].setText("Całkowita długość ruchu: {:.0f} mm".format(self.total_distance))
+        self.stats_labels["Cutting Distance"].setText("Całkowita długość cięcia: {:.0f} mm".format(self.cutting_distance))
 
 
 

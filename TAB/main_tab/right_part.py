@@ -565,6 +565,10 @@ class RightPart(QWidget):
         self.reset_zoom_button = QPushButton("Reset Zoom")
         self.reset_zoom_button.clicked.connect(self.graphics_view.resetZoom)
         zoom_button_layout.addWidget(self.reset_zoom_button)
+        self.grid_button = QPushButton('Toggle Grid', self)
+        self.grid_button.clicked.connect(self.toggle_grid)
+        zoom_button_layout.addWidget(self.grid_button)
+        self.grid_displayed = False
         layout.addLayout(zoom_button_layout)
 
         button_layout = QHBoxLayout()
@@ -1226,27 +1230,54 @@ class RightPart(QWidget):
         pen.setWidth(2)
         pen.setCosmetic(True)
 
-        self.scene.addRect(0, 0, self.volume.width(), self.volume.height(), pen)
-
         # Calculate 10% of the width and height
         scale_width = self.volume.width() * 0.1
         scale_height = self.volume.height() * 0.1
 
-        for i in range(10, -1, -1):
-            self.scene.addLine(0, (10 - i) * scale_height, -min_val, (10 - i) * scale_height, pen)
-            label_value = i * 0.1 * self.volume.height() / 100
+        # Create a new pen for the grid lines
+        grid_pen = QPen(Qt.lightGray)
+        grid_pen.setColor(QColor('gray').lighter(180))
+        grid_pen.setStyle(Qt.SolidLine)
+        grid_pen.setWidth(1)
+        grid_pen.setCosmetic(True)
+
+        shorter_side = min(self.volume.width(), self.volume.height())
+        scale = shorter_side * 0.1
+
+        for i in range(int(self.volume.height() / shorter_side * 10), -1, -1):
+            self.scene.addLine(0, (int(self.volume.height() / shorter_side * 10) - i) * scale, -min_val, (int(self.volume.height() / shorter_side * 10) - i) * scale, pen)
+            label_value = i * 0.1 * shorter_side / 100
             label = QGraphicsTextItem(f"{label_value:.0f}mm")
             label.setFont(font)
-            label.setPos(-label.boundingRect().width() - (1.5 * min_val), (10 - i) * scale_height - (0.75 * min_val))
+            label.setPos(-label.boundingRect().width() - (1.5 * min_val), (int(self.volume.height() / shorter_side * 10) - i) * scale - (0.75 * min_val))
             self.scene.addItem(label)
 
-        for i in range(11):
-            self.scene.addLine(i * scale_width, self.volume.height(), i * scale_width, self.volume.height() + min_val, pen)
-            label_value = i * 0.1 * self.volume.width() / 100 
+            if i < int(self.volume.height() / shorter_side * 10) and self.grid_displayed:
+                for j in range(1, 11):
+                    self.scene.addLine(0, ((int(self.volume.height() / shorter_side * 10) - i) - j * 0.1) * scale, self.volume.width(), ((int(self.volume.height() / shorter_side * 10) - i) - j * 0.1) * scale, grid_pen)
+
+
+        for i in range(int(self.volume.width() / shorter_side * 10) + 1):
+            self.scene.addLine(i * scale, self.volume.height(), i * scale, self.volume.height() + min_val, pen)
+            label_value = i * 0.1 * shorter_side / 100 
             label = QGraphicsTextItem(f"{label_value:.0f}mm")
             label.setFont(font)
-            label.setPos(i * scale_width - label.boundingRect().width() / 2, self.volume.height() + (1.5 * min_val))
+            label.setPos(i * scale - label.boundingRect().width() / 2, self.volume.height() + (1.5 * min_val))
             self.scene.addItem(label)
+
+            if i < int(self.volume.width() / shorter_side * 10) and self.grid_displayed:
+                for j in range(1, 11):
+                    self.scene.addLine((i + j * 0.1) * scale, 0, (i + j * 0.1) * scale, self.volume.height(), grid_pen)
+
+        self.scene.addRect(0, 0, self.volume.width(), self.volume.height(), pen)
+
+    def toggle_grid(self):
+        self.grid_displayed = not self.grid_displayed
+        self.scene.clear()
+        index = self.layerComboBox.currentIndex()
+        if index >= 0:
+            self.draw_nesting_box()
+            self.display_selected_layer(index)
 
     async def display_file(self, file_paths, width, height, checked_paths):
         self.figures.clear()

@@ -700,7 +700,7 @@ class RightPart(QWidget):
                 # tutaj generowanie G-codu dla plazmy
 
                 # Tworzenie i konfiguracja okna dialogowego
-                custom_dialog = CustomDialog()
+                custom_dialog = CustomDialog(self.change_tab_func)
                 custom_dialog.setModal(True)
 
                 # Pobierz parametry narzędzia od użytkownika
@@ -812,7 +812,7 @@ class RightPart(QWidget):
             elif (global_saved_parameters['type_tool']) == "stożek":
                 
                 # Tworzenie i konfiguracja okna dialogowego
-                custom_dialog = CustomDialog()
+                custom_dialog = CustomDialog(self.change_tab_func)
                 custom_dialog.setModal(True)
 
                 # Pobierz parametry narzędzia od użytkownika

@@ -202,20 +202,25 @@ class InfoTab(QWidget):
             if not parts:
                 continue
 
-            params = {part[0]: float(part[1:]) for part in parts[1:]} if len(parts) > 1 else {}
             # Parse the command and parameters
             command = parts[0]
-            if command == 'M3':
+            print(command)
+            if command == 'M3' or command == 'M30' or command == 'M300':
                 solid_line = True
+                print(solid_line)
             elif command == 'M5':
                 solid_line = False
+                print(solid_line)
                 continue  # Skip drawing if it's an M5 command
             elif command != 'G1':  # Skip lines that are not G1 commands
                 continue
 
 
+            if command.startswith('G') or command.startswith('M'):
+                params = {part[0]: float(part[1:]) for part in parts[1:]} if len(parts) > 1 else {}
+
             self.num_lines += 1
-            if 'F' in params and solid_line == False:
+            if 'F' in params and solid_line == False and 'Z' not in params:
                 self.speed = params['F']
             self.speed_sum += self.speed
                 # print(self.speed)
@@ -290,8 +295,9 @@ class InfoTab(QWidget):
                 continue  # Skip drawing if it's an M5 command
             elif command != 'G1':  # Skip lines that are not G1 commands
                 continue
-            
-            params = {part[0]: float(part[1:]) for part in parts[1:]} if len(parts) > 1 else {}
+
+            if command.startswith('G') or command.startswith('M'):
+                params = {part[0]: float(part[1:]) for part in parts[1:]} if len(parts) > 1 else {}
 
             self.num_lines += 1
             if 'F' in params and solid_line == False:

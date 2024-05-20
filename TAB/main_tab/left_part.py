@@ -213,26 +213,52 @@ class LeftPart(QWidget):
             # Wstawienie miniatury figury do pierwszej kolumny
             self.table.setCellWidget(row_position, 0, figure_canvas)
 
-            # Wstawienie typu elementu do drugiej kolumny
-            self.table.setItem(row_position, 1, QTableWidgetItem('SVG Group'))
+            # Obliczenie szerokości i wysokości ścieżek
+            path_data = ' '.join(ET.tostring(path, encoding='unicode') for path in paths)
+            start_index = path_data.find('d="') + 3
+            end_index = path_data.find('"', start_index)
+            path_string = path_data[start_index:end_index]
+            path = parse_path(path_string)
+            min_x, min_y, max_x, max_y = float('inf'), float('inf'), float('-inf'), float('-inf')
 
-            # Wstawienie danych (ścieżki) do trzeciej kolumny - pusty string, bo to cała grupa
-            # print(' '.join(ET.tostring(path, encoding='unicode') for path in group))
-            path_data = ' '.join(ET.tostring(path, encoding='unicode') for path in group)
+            for segment in path:
+                if isinstance(segment, (Line, Move, Close)):
+                    points = [segment.start, segment.end]
+                elif isinstance(segment, (CubicBezier, QuadraticBezier)):
+                    points = [segment.start, segment.control1, segment.end] if isinstance(segment, CubicBezier) else [segment.start, segment.control, segment.end]
+                elif isinstance(segment, Arc):
+                    points = [segment.start, segment.end]
+                else:
+                    continue
+                
+                for point in points:
+                    min_x = min(min_x, point.real)
+                    max_x = max(max_x, point.real)
+                    min_y = min(min_y, point.imag)
+                    max_y = max(max_y, point.imag)
+
+            width = int((max_x - min_x) * self.svg_to_mm)
+            height = int((max_y - min_y) * self.svg_to_mm)
+
+            # Wstawienie wymiarów do drugiej kolumny
+            self.table.setItem(row_position, 1, QTableWidgetItem(f"{width} mm x {height} mm"))
+
+            # Wstawienie danych (ścieżki) do trzeciej kolumny
             self.table.setItem(row_position, 2, QTableWidgetItem(path_data))
 
             # Dodanie checkboxa do zaznaczania wiersza
-            checkbox_item = QCheckBox()
-            self.table.setCellWidget(row_position, 3, checkbox_item)
+            checkbox_widget = CenteredCheckbox()
+            self.table.setCellWidget(row_position, 3, checkbox_widget)
 
-            number_input = QLineEdit('1')
-            self.table.setCellWidget(row_position, 4, number_input)
-            number_input.setText('1')
+            # Dodanie QSpinBox
+            spin_box_widget = CenteredSpinBox()
+            self.table.setCellWidget(row_position, 4, spin_box_widget)
+            spin_box_widget.spin_box.setValue(1)
 
             # Ustawienie stałego rozmiaru dla komórki z miniaturą
             self.table.verticalHeader().setDefaultSectionSize(145)
-             
-             # Centrowanie tekstu w każdej komórce
+
+            # Centrowanie tekstu w każdej komórce
             rows = self.table.rowCount()
             cols = self.table.columnCount()
             for row in range(rows):
@@ -240,7 +266,6 @@ class LeftPart(QWidget):
                     item = self.table.item(row, col)
                     if item:  # Sprawdzenie, czy komórka jest niepusta
                         item.setTextAlignment(Qt.AlignCenter)  # Ustawienie wyrównania tekstu na środek
-
 
         except Exception as e:
             print("Błąd przetwarzania grupy SVG:", e)

@@ -1350,31 +1350,6 @@ class RightPart(QWidget):
             ax.set_xticks([])
             ax.set_yticks([])
 
-            # Draw X and Y axis plot
-            # ax.plot([0, width], 'k-')  # Draw bottom edge line with ticks
-
-            # Set major tick spacing and format tick labels with mm units
-            # major_tick_spacing = 100  # Set major tick spacing to 100 mm
-            # # Set tick positions and labels for better visibility
-            # ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
-            # ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
-            # ax.xaxis.set_major_formatter(FuncFormatter(self.format_x_ticks))
-
-            # # Set tick parameters and labels for better visibility
-            # ax.tick_params(axis='both', labelsize=10)
-
-            # # Set tick positions and labels for Y-axis
-            # # ax.set_yticks(np.linspace(-height / 2, height / 2, num=11))  # Set 11 ticks evenly spaced from -height/2 to height/2
-            # ax.tick_params(axis='y', labelsize=10)  # Set Y-axis tick label size
-            # ax.yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
-            # ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x)} mm' if x % (10 * major_tick_spacing) == 0 else ''))
-            # ax.yaxis.set_major_formatter(FuncFormatter(self.format_y_ticks))
-            # # Adjust tick length specifically for major ticks on Y-axis
-            # ax.tick_params(axis='y', which='major', length=8)
-            # ax.tick_params(axis='x', which='major', length=8)
-            # Draw line with grid (tick marks) for left (Y-axis) edge
-            # ax.plot([0, height], 'k-')  # Draw left edge line
-
             min_x, max_x, min_y, max_y = float('inf'), float('-inf'), float('inf'), float('-inf')
 
             best_area = float('inf')
@@ -1405,20 +1380,7 @@ class RightPart(QWidget):
 
             for i, item in enumerate(self.inputPoints):
                 await asyncio.sleep(0)
-                # # testowe
-                # x_values = []
-                # y_values = []
 
-                # transItem = item.transformedShape()
-
-                # rows = len(transItem.toString().strip().split('\n')) - 1
-                # for j in range(rows - 1):
-                #     x_value = transItem.vertex(j).x()
-                #     y_value = transItem.vertex(j).y()
-                #     x_values.append(x_value)
-                #     y_values.append(y_value)
-                # random_color = (random.random(), random.random(), random.random())
-                # ax.plot(x_values, y_values, color=random_color, linewidth=1)
                 
                 paths = returned_svg_points[i].split('M')
                 # paths = [path for path in paths if path]
@@ -1471,17 +1433,6 @@ class RightPart(QWidget):
                 # Draw the bounding box
                 ax.add_patch(Rectangle((min_x, min_y), bounding_box_width, bounding_box_height, linewidth=1, edgecolor='r', facecolor='none'))
 
-                # self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
-                # self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
-                # self.scene.addLine(0, self.volume.height(), 0, 0, pen)
-
-                # # Display the canvas only if it's the smallest bounding box found so far
-                # canvas = FigureCanvas(fig)
-                # #canvas.setVisible(False)  # Domyślnie niewidoczne
-                # self.scene.addWidget(canvas)
-                # canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                # self.canvas_layers.append(canvas)
-                # #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
                 self.figures.append(fig) 
                 self.figuresListCorrect.append((self.figuresList, min_x, min_y, bounding_box_width, bounding_box_height))
                 

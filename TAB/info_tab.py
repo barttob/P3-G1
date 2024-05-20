@@ -204,13 +204,13 @@ class InfoTab(QWidget):
 
             # Parse the command and parameters
             command = parts[0]
-            print(command)
+            # print(command)
             if command == 'M3' or command == 'M30' or command == 'M300':
                 solid_line = True
-                print(solid_line)
+                # print(solid_line)
             elif command == 'M5':
                 solid_line = False
-                print(solid_line)
+                # print(solid_line)
                 continue  # Skip drawing if it's an M5 command
             elif command != 'G1':  # Skip lines that are not G1 commands
                 continue

@@ -52,22 +52,7 @@ class Parser():
                 self.svg_parse_points = []
                 self.svg_points = []
                 self.extract_points_from_path(path)
-                # if self.is_convex(path):
-                #     vertices = self.remove_concave_vertices(path)
-                # print(self.svg_points)
-                # print(self.is_convex(self.svg_points))
-                # print('retaa')
-                # while not self.is_convex(self.svg_points):
-                # #     print('reta')
-                #     self.svg_points = self.remove_concave_vertices(self.svg_points)
-                    # print(self.is_convex(vertices))
-                # else:
-                #     vertices = path
-                # print(vertices)
-                # vert = Path()
-                # for segment in vertices:
-                #     vert.append(segment)
-                # print(vert.d())
+
                 self.svg_path_send.append(path_str)
                 self.svg_parse_points = []
                 for vertex in self.svg_points:
@@ -78,55 +63,6 @@ class Parser():
 
         # print('ret')
         return (self.inputPoints, self.svg_path_send)
-    
-    def is_convex(self, vertices):
-        # Ensure at least 3 vertices to form a polygon
-        if len(vertices) < 3:
-            return False
-
-        # Calculate the cross product of consecutive edges
-        def cross_product(p0, p1, p2):
-            return (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1])
-
-        # Check the sign of the cross products
-        sign = None
-        for i in range(len(vertices)):
-
-            x1, y1 = vertices[i]
-            x2, y2 = vertices[(i + 1) % len(vertices)]
-            x3, y3 = vertices[(i + 2) % len(vertices)]
-            cross = cross_product((x1, y1), (x2, y2), (x3, y3))
-            if cross != 0:
-                if sign is None:
-                    sign = cross > 0
-                elif sign != (cross > 0):
-                    return False  # Different signs mean the polygon is concave
-        return True  # All cross products have the same sign, hence convex
-    
-    def remove_concave_vertices(self, path):
-        vertices = path
-
-        new_path_vertices = []
-
-        for i in range(len(vertices)):
-            # print(i)
-            prev_index = (i - 1) % len(vertices)
-            curr_index = i
-            next_index = (i + 1) % len(vertices)
-
-            p0 = vertices[prev_index]
-            p1 = vertices[curr_index]
-            p2 = vertices[next_index]
-
-            # Calculate the cross product
-            cross_product = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1])
-
-            # If the cross product is negative, the vertex is concave
-            if cross_product >= 0:
-                new_path_vertices.append(vertices[i])
-
-        return new_path_vertices
-
 
 
     def extract_d_attribute(self, path_string):
@@ -167,11 +103,7 @@ class Parser():
                     break
                 else:
                     self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
-                # self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
-                # self.svg_parse_points.append(Point(self.first[0], self.first[1]))
-                # self.svg_points.append(self.first)
-                    # self.first = (int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100))
-                # self.svg_parse_points.append(Point(int(segment.start.real * self.svg_to_mm * 100), int(segment.start.imag * self.svg_to_mm * 100)))
+
             i+=1
 
     def points_on_line(self, line):

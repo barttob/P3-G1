@@ -23,6 +23,8 @@ from utils.parser import Parser
 from shapely.geometry import Point, Polygon, LineString
 import asyncio
 
+import time
+
 class CenteredCheckbox(QWidget):
     def __init__(self, parent=None):
         super(CenteredCheckbox, self).__init__(parent)

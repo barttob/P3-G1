@@ -6,7 +6,7 @@ import random
 import os
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from pynest2d import NfpConfig, nest, Box, Item
+from pynest2d import NfpConfig, nest, Box, Item, Point
 from utils.parser import Parser
 import sys
 from math import pi
@@ -1317,6 +1317,18 @@ class RightPart(QWidget):
         min_area_rotation = 0
         min_area_index = -1
         
+        for index, item in enumerate(self.inputPoints):
+            print(item.isContourConvex())
+            if not item.isContourConvex():
+                box_points = []
+                box = item.boundingBox()
+                # print(box.minCorner().x(), box.minCorner().y(), box.maxCorner().x(), box.maxCorner().y())
+                box_points.append(Point(box.minCorner().x(), box.minCorner().y()))
+                box_points.append(Point(box.minCorner().x(), box.maxCorner().y()))
+                box_points.append(Point(box.maxCorner().x(), box.maxCorner().y()))
+                box_points.append(Point(box.maxCorner().x(), box.minCorner().y()))
+                box_points.append(Point(box.minCorner().x(), box.minCorner().y()))
+                self.inputPoints[index] = Item(box_points)
 
         last_collision_count = 0
         for index, rotation in enumerate(rotations):
@@ -1381,6 +1393,21 @@ class RightPart(QWidget):
             for i, item in enumerate(self.inputPoints):
                 await asyncio.sleep(0)
 
+                # # testowe
+                # x_values = []
+                # y_values = []
+
+                # transItem = item.transformedShape()
+
+                # rows = len(transItem.toString().strip().split('\n')) - 1
+                # for j in range(rows - 1):
+                #     x_value = transItem.vertex(j).x() + self.volume.width() / 2
+                #     y_value = transItem.vertex(j).y() + self.volume.height() / 2 
+                #     x_values.append(x_value)
+                #     y_values.append(y_value)
+                # random_color = (random.random(), random.random(), random.random())
+                # ax.plot(x_values, y_values, color=random_color, linewidth=1)
+
                 
                 paths = returned_svg_points[i].split('M')
                 # paths = [path for path in paths if path]
@@ -1427,6 +1454,19 @@ class RightPart(QWidget):
                 self.best_configurations.append((rotation, bounding_box_area, index))
                 min_area_rotation = rotation
                 min_area_index = index
+
+                
+                # # self.scene.addLine(self.volume.width(), 0, self.volume.width(), self.volume.height(), pen)
+                # # self.scene.addLine(self.volume.width(), self.volume.height(), 0, self.volume.height(), pen)
+                # # self.scene.addLine(0, self.volume.height(), 0, 0, pen)
+                # fig.set_size_inches(8, 8)
+                # # Display the canvas only if it's the smallest bounding box found so far
+                # canvas = FigureCanvas(fig)
+                # #canvas.setVisible(False)  # Domyślnie niewidoczne
+                # self.scene.addWidget(canvas)
+                # canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                # self.canvas_layers.append(canvas)
+                # #self.layerComboBox.addItem(f"Rotation {rotation:.2f} rad - Area {min_area:.2f}")
 
 
 

@@ -176,6 +176,8 @@ class Parser():
 
         scale = int(self.parse_svg_dimensions(svg_str))
         svg_str = self.remove_first_rect_and_ungroup(svg_str, scale)
+        # print(svg_str)
+        svg_str = self.remove_c1_paths(svg_str)
 
         random_string = str(uuid.uuid4())[:8]
         output_directory = os.path.join(os.getcwd(), "converted_dxf")
@@ -190,6 +192,21 @@ class Parser():
         return output_svg_file
         # self.inputPoints = self.parse_svg()
         # return self.inputPoints
+
+    def remove_c1_paths(self, svg_str):
+        root = ET.fromstring(svg_str)
+
+        index = 0
+        for styles in root.findall('def'):
+            for style in styles.findall('style'):
+                index += 1
+
+        if index > 1:
+            for path in root.findall('path'):
+                if 'class' in path.attrib and path.attrib['class'] == 'C1':
+                    root.remove(path)
+
+        return ET.tostring(root, encoding='utf-8').decode('utf-8')
 
     def remove_namespace(self, tree):
         for elem in tree.iter():

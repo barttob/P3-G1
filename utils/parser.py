@@ -24,6 +24,7 @@ class Parser():
     def parse_svg(self):
         self.svg_points = []
         path_strings = []
+
         for path in self.svg_paths:
             occurrences = re.findall("path", path)
             if len(occurrences) > 1:
@@ -31,6 +32,8 @@ class Parser():
             else:
                 path_strings.append(self.extract_d_attribute(path))
             
+        if not len(occurrences) > 1:
+            path_strings = self.biggest_as_first(path_strings)
 
         for path_str in path_strings:
 
@@ -60,8 +63,6 @@ class Parser():
                 item = Item(self.svg_parse_points)
                 self.inputPoints.append(item)
 
-
-        # print('ret')
         return (self.inputPoints, self.svg_path_send)
 
 
@@ -176,8 +177,30 @@ class Parser():
 
         scale = int(self.parse_svg_dimensions(svg_str))
         svg_str = self.remove_first_rect_and_ungroup(svg_str, scale)
-        # print(svg_str)
         svg_str = self.remove_c1_paths(svg_str)
+
+        root = ET.fromstring(svg_str)
+        index = 0
+        for styles in root.findall('def'):
+            for style in styles.findall('style'):
+                index += 1
+            if index > 1:
+                paths = root.findall('path')
+                trans_paths = []
+                for path in paths:
+                    trans_path = self.biggest_as_outer(path.attrib['d'])
+                    trans_paths.append('<path d="' + trans_path + '" class="' + path.attrib['class'] + '" />')
+                
+                svg_header_match = re.match(r'(<svg.*?<def>.*?</def>)', svg_str, re.DOTALL)
+                svg_header = svg_header_match.group(1) if svg_header_match else ''  
+                svg_footer = '</svg>'
+
+                svg_str = ''.join(svg_header)
+                svg_str += ''.join(trans_paths)
+                svg_str += ''.join(svg_footer)
+
+
+        # svg_str = self.biggest_as_outer(svg_str)
 
         random_string = str(uuid.uuid4())[:8]
         output_directory = os.path.join(os.getcwd(), "converted_dxf")
@@ -214,6 +237,52 @@ class Parser():
                 elem.tag = elem.tag.split('}', 1)[1]
         return tree
     
+
+    def biggest_as_first(self, svg_string):
+        # root = ET.fromstring(svg_string)
+        # paths = root.findall('path')
+        parsed_segments = [(path, parse_path(path), self.calculate_bounding_box(parse_path(path))) for path in svg_string]
+        sorted_segments = sorted(parsed_segments, key=lambda x: self.calculate_area(x[2]), reverse=True)
+
+        sorted_paths = []
+        for seg in sorted_segments:
+            sorted_paths.append(seg[0])
+
+        return sorted_paths
+
+    def biggest_as_outer(self, svg_string):
+        path_segment_pattern = re.compile(r'(M[^MZ]+Z)')
+        path_segments = path_segment_pattern.findall(svg_string)
+        parsed_segments = [(segment, parse_path(segment), self.calculate_bounding_box(parse_path(segment))) for segment in path_segments]
+        sorted_segments = sorted(parsed_segments, key=lambda x: self.calculate_area(x[2]), reverse=True)
+        sorted_path_data = ' '.join([seg[0] for seg in sorted_segments])
+        return sorted_path_data
+
+
+    def calculate_bounding_box(self, path):
+        min_x = min_y = float('inf')
+        max_x = max_y = float('-inf')
+        
+        for segment in path:
+            if isinstance(segment, (Line, CubicBezier, QuadraticBezier, Arc)):
+                points = [segment.start, segment.end]
+                if hasattr(segment, 'control1'):
+                    points.append(segment.control1)
+                if hasattr(segment, 'control2'):
+                    points.append(segment.control2)
+                for point in points:
+                    min_x = min(min_x, point.real)
+                    min_y = min(min_y, point.imag)
+                    max_x = max(max_x, point.real)
+                    max_y = max(max_y, point.imag)
+        
+        return (min_x, min_y, max_x, max_y)
+
+
+    def calculate_area(self, bbox):
+        min_x, min_y, max_x, max_y = bbox
+        return (max_x - min_x) * (max_y - min_y)
+        
     
 
     def remove_first_rect_and_ungroup(self, svg_string, scale):

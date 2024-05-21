@@ -59,17 +59,17 @@ class ToolParametersDialog(QDialog):
 
         # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla lasera
         # LineEdits for tool parameters
-        self.cutting_speed_label = QLabel("Prędkość cięcia:")
+        self.cutting_speed_label = QLabel("Prędkość cięcia: (mm/s)")
         self.cutting_speed_edit = QLineEdit()
         self.layout.addWidget(self.cutting_speed_label)
         self.layout.addWidget(self.cutting_speed_edit)
 
-        self.movement_speed_label = QLabel("Prędkość ruchu:")
+        self.movement_speed_label = QLabel("Prędkość ruchu: (mm/s)")
         self.movement_speed_edit = QLineEdit()
         self.layout.addWidget(self.movement_speed_label)
         self.layout.addWidget(self.movement_speed_edit)
 
-        self.probing_depth_label = QLabel("Głębokość sondowania:")  # brak w gcodzie
+        self.probing_depth_label = QLabel("Głębokość sondowania: (mm)")  # brak w gcodzie
         self.probing_depth_edit = QLineEdit()
         self.layout.addWidget(self.probing_depth_label)
         self.layout.addWidget(self.probing_depth_edit)
@@ -79,12 +79,12 @@ class ToolParametersDialog(QDialog):
         #self.layout.addWidget(self.depth_label)
         #self.layout.addWidget(self.depth_edit)
 
-        self.dwell_label = QLabel("Czas przestoju:")
+        self.dwell_label = QLabel("Czas przestoju: (ms)")
         self.dwell_edit = QLineEdit()
         self.layout.addWidget(self.dwell_label)
         self.layout.addWidget(self.dwell_edit)
 
-        self.unit_label = QLabel("Jednostka:")  # brak w gcodzie
+        self.unit_label = QLabel("Jednostka: (mm)")  # brak w gcodzie
         self.unit_edit = QLineEdit()
         self.layout.addWidget(self.unit_label)
         self.layout.addWidget(self.unit_edit)
@@ -100,32 +100,32 @@ class ToolParametersDialog(QDialog):
         self.layout.addWidget(self.footer_edit)
 
         # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla plazmy
-        self.plasma_power_label = QLabel("Plazma power:")
+        self.plasma_power_label = QLabel("Plazma power: (W)")
         self.plasma_power_edit = QLineEdit()
         self.layout.addWidget(self.plasma_power_label)
         self.layout.addWidget(self.plasma_power_edit)
 
-        self.plasma_speed_label = QLabel("Plazma speed:")
+        self.plasma_speed_label = QLabel("Plazma speed: (mm/s)")
         self.plasma_speed_edit = QLineEdit()
         self.layout.addWidget(self.plasma_speed_label)
         self.layout.addWidget(self.plasma_speed_edit)
 
-        self.cutting_height_label = QLabel("Wysokość cięcia:")
+        self.cutting_height_label = QLabel("Wysokość cięcia: (mm)")
         self.cutting_height_edit = QLineEdit()
         self.layout.addWidget(self.cutting_height_label)
         self.layout.addWidget(self.cutting_height_edit)
 
-        self.piercing_height_label = QLabel("Wysokość przebicia:")
+        self.piercing_height_label = QLabel("Wysokość przebicia: (mm)")
         self.piercing_height_edit = QLineEdit()
         self.layout.addWidget(self.piercing_height_label)
         self.layout.addWidget(self.piercing_height_edit)
 
-        self.piercing_time_label = QLabel("Czas przebicia:")
+        self.piercing_time_label = QLabel("Czas przebicia: (s)")
         self.piercing_time_edit = QLineEdit()
         self.layout.addWidget(self.piercing_time_label)
         self.layout.addWidget(self.piercing_time_edit)
 
-        self.floating_height_label = QLabel("Czas dryfu:")
+        self.floating_height_label = QLabel("Czas dryfu: (s)")
         self.floating_height_edit = QLineEdit()
         self.layout.addWidget(self.floating_height_label)
         self.layout.addWidget(self.floating_height_edit)
@@ -137,27 +137,27 @@ class ToolParametersDialog(QDialog):
 
         # Tworzenie pól dla parametrów narzędzia przed generowaniem gcodu dla stożka
 
-        self.cone_power_label = QLabel("Cone power:")
+        self.cone_power_label = QLabel("Cone power: (W)")
         self.cone_power_edit = QLineEdit()
         self.layout.addWidget(self.cone_power_label)
         self.layout.addWidget(self.cone_power_edit)
 
-        self.cone_speed_label = QLabel("Cone speed:")
+        self.cone_speed_label = QLabel("Cone speed: (mm/s)")
         self.cone_speed_edit = QLineEdit()
         self.layout.addWidget(self.cone_speed_label)
         self.layout.addWidget(self.cone_speed_edit)
 
-        self.floating_height_cone_label = QLabel("Czas dryfu dla frezu:")
+        self.floating_height_cone_label = QLabel("Czas dryfu dla frezu: (s)")
         self.floating_height_cone_edit = QLineEdit()
         self.layout.addWidget(self.floating_height_cone_label)
         self.layout.addWidget(self.floating_height_cone_edit)
 
-        self.total_depth_of_cutting_label = QLabel("Całkowita głębokość skrawania:")
+        self.total_depth_of_cutting_label = QLabel("Całkowita głębokość skrawania: (mm)")
         self.total_depth_of_cutting_edit = QLineEdit()
         self.layout.addWidget(self.total_depth_of_cutting_label)
         self.layout.addWidget(self.total_depth_of_cutting_edit)
 
-        self.depth_of_cutting_per_pass_label = QLabel("Głębokość skrawania na przejście:")
+        self.depth_of_cutting_per_pass_label = QLabel("Głębokość skrawania na przejście: (mm)")
         self.depth_of_cutting_per_pass_edit = QLineEdit()
         self.layout.addWidget(self.depth_of_cutting_per_pass_label)
         self.layout.addWidget(self.depth_of_cutting_per_pass_edit)

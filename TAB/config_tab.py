@@ -562,10 +562,10 @@ class ConfigTab(QWidget):
             # Dodaj elementy do QComboBox
             self.tool_parameters['laser']['unit'].addItems(["mm", "cale"])  # Dodaj elementy do QComboBox
 
-            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['laser']['cutting_speed'])
-            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['laser']['speed_movement'])
+            form_layout.addRow("Prędkość cięcia: (mm/s)", self.tool_parameters['laser']['cutting_speed'])
+            form_layout.addRow("Prędkość ruchu: (mm/s)", self.tool_parameters['laser']['speed_movement'])
             #form_layout.addRow("Głębokość cięcia:", self.tool_parameters['laser']['cutting_depth'])
-            form_layout.addRow("Czas przestoju:", self.tool_parameters['laser']['downtime'])
+            form_layout.addRow("Czas przestoju: (ms)", self.tool_parameters['laser']['downtime'])
             form_layout.addRow("Jednostka:", self.tool_parameters['laser']['unit'])
             form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['laser']['custom_header'])
             form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['laser']['custom_footer'])
@@ -630,18 +630,18 @@ class ConfigTab(QWidget):
 
             #form_layout.addRow("Moc plazmy:", self.tool_parameters['plazma']['plasma_power'])
             #form_layout.addRow("Prędkość plazmy:", self.tool_parameters['plazma']['plasma_speed'])
-            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['plazma']['cutting_speed'])            # jest 
-            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['plazma']['speed_movement'])            # jest
+            form_layout.addRow("Prędkość cięcia: (mm/s)", self.tool_parameters['plazma']['cutting_speed'])            # jest 
+            form_layout.addRow("Prędkość ruchu: (mm/s)", self.tool_parameters['plazma']['speed_movement'])            # jest
             #form_layout.addRow("Głębokość cięcia:", self.tool_parameters['plazma']['cutting_depth'])           # nie ma
-            form_layout.addRow("Głębokość sondowania:", self.tool_parameters['plazma']['probing_depth'])       # jest 
-            form_layout.addRow("Czas przestoju:", self.tool_parameters['plazma']['downtime'])                  # jest
+            form_layout.addRow("Głębokość sondowania: (mm)", self.tool_parameters['plazma']['probing_depth'])       # jest 
+            form_layout.addRow("Czas przestoju: (ms)", self.tool_parameters['plazma']['downtime'])                  # jest
             form_layout.addRow("Jednostka:", self.tool_parameters['plazma']['unit'])                           # jest
             form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['plazma']['custom_header'])    # jest
             form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['plazma']['custom_footer'])      # jest
-            form_layout.addRow("Wysokość cięcia:", self.tool_parameters['plazma']['cutting_height'])           # jest
-            form_layout.addRow("Wysokość przebicia:", self.tool_parameters['plazma']['piercing_height'])       # jest
-            form_layout.addRow("Czas przebicia:", self.tool_parameters['plazma']['piercing_time'])             # jest
-            form_layout.addRow("Wysokość dryfu:", self.tool_parameters['plazma']['floating_height'])           # jest
+            form_layout.addRow("Wysokość cięcia: (mm)", self.tool_parameters['plazma']['cutting_height'])           # jest
+            form_layout.addRow("Wysokość przebicia: (mm)", self.tool_parameters['plazma']['piercing_height'])       # jest
+            form_layout.addRow("Czas przebicia: (s)", self.tool_parameters['plazma']['piercing_time'])             # jest
+            form_layout.addRow("Wysokość dryfu: (mm)", self.tool_parameters['plazma']['floating_height'])           # jest
 
             # Set default values for all parameters
             default_button = QPushButton("Ustaw domyślne")
@@ -670,16 +670,16 @@ class ConfigTab(QWidget):
 
             #form_layout.addRow("Moc stożka:", self.tool_parameters['stożek']['cone_power'])
             #form_layout.addRow("Prędkość stożka:", self.tool_parameters['stożek']['cone_speed'])
-            form_layout.addRow("Prędkość cięcia:", self.tool_parameters['stożek']['cutting_speed'])
-            form_layout.addRow("Prędkość ruchu:", self.tool_parameters['stożek']['speed_movement'])
+            form_layout.addRow("Prędkość cięcia: (mm/s)", self.tool_parameters['stożek']['cutting_speed'])
+            form_layout.addRow("Prędkość ruchu: (mm/s)", self.tool_parameters['stożek']['speed_movement'])
             #form_layout.addRow("Głębokość cięcia:", self.tool_parameters['stożek']['cutting_depth'])
-            form_layout.addRow("Czas przestoju:", self.tool_parameters['stożek']['downtime'])
+            form_layout.addRow("Czas przestoju: (ms)", self.tool_parameters['stożek']['downtime'])
             form_layout.addRow("Jednostka:", self.tool_parameters['stożek']['unit'])
             form_layout.addRow("Niestandardowy nagłówek:", self.tool_parameters['stożek']['custom_header'])
             form_layout.addRow("Niestandardowy stopka:", self.tool_parameters['stożek']['custom_footer'])
-            form_layout.addRow("Wysokość dryfu dla frezu:", self.tool_parameters['stożek']['floating_height_cone'])
-            form_layout.addRow("Całkowita głębokość skrawania:", self.tool_parameters['stożek']['total_depth_of_cutting'])
-            form_layout.addRow("Głębokość skrawania na przejście:", self.tool_parameters['stożek']['depth_of_cutting_per_pass'])
+            form_layout.addRow("Wysokość dryfu dla frezu: (mm)", self.tool_parameters['stożek']['floating_height_cone'])
+            form_layout.addRow("Całkowita głębokość skrawania: (mm)", self.tool_parameters['stożek']['total_depth_of_cutting'])
+            form_layout.addRow("Głębokość skrawania na przejście: (mm)", self.tool_parameters['stożek']['depth_of_cutting_per_pass'])
 
             # Set default values for all parameters
             default_button = QPushButton("Ustaw domyślne")
@@ -773,7 +773,7 @@ class ConfigTab(QWidget):
             self.tool_parameters['laser']['cutting_speed'].setText("103")
             self.tool_parameters['laser']['speed_movement'].setText("10")
             self.tool_parameters['laser']['cutting_depth'].setText("12")
-            self.tool_parameters['laser']['downtime'].setText("29")
+            self.tool_parameters['laser']['downtime'].setText("20")
             self.tool_parameters['laser']['unit'].setCurrentIndex(0)
             self.tool_parameters['laser']['custom_header'].setText("M10")
             self.tool_parameters['laser']['custom_footer'].setText("M24")

@@ -36,7 +36,7 @@ from matplotlib.ticker import MultipleLocator
 from matplotlib.ticker import MultipleLocator, FuncFormatter
 from collections import namedtuple
 
-
+import time
 
 class ToolParametersDialog(QDialog):
     def __init__(self):
@@ -1280,6 +1280,7 @@ class RightPart(QWidget):
             self.display_selected_layer(index)
 
     async def display_file(self, file_paths, width, height, checked_paths):
+        start_time = time.time()
         self.figures.clear()
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
@@ -1412,6 +1413,7 @@ class RightPart(QWidget):
                 paths = returned_svg_points[i].split('M')
                 # paths = [path for path in paths if path]
                 paths = ['M' + path for path in paths if path]
+                
                 for path in paths: 
                     parsed_path = parse_path(path)
                     item.resetTransformation()
@@ -1541,6 +1543,8 @@ class RightPart(QWidget):
         if min_area_index != -1:
             print(f"Minimum Bounding Box Area: {min_area:.2f} at Rotation {min_area_rotation:.2f} radians, Index {min_area_index}")
             #self.layerComboBox.setCurrentIndex(min_area_index)    
+        end_time = time.time()  # Record the end time
+        print(end_time - start_time)
             
 
     def update_combobox_with_best_configurations(self):
@@ -1555,7 +1559,7 @@ class RightPart(QWidget):
         # Ustawienie najlepszej wersji jako domyślnej (najmniejsza area)
         if self.best_configurations:
             self.layerComboBox.setCurrentIndex(0)
-            self.display_selected_layer(0)
+            # self.display_selected_layer(0)
 
     def check_fit_in_volume(self, parsed_objects, width, height):
         global global_space_between_objects
